@@ -1,5 +1,5 @@
-from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework import status, viewsets
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -33,6 +33,37 @@ from .serializers import (
     ReporteSerializer,
     RutaSerializer,
 )
+
+
+@api_view(["GET"])
+def welcome_api_view(request):
+    """
+    Vista de bienvenida para la API
+    Muestra información básica e información de los endpoints disponibles
+    """
+    return Response(
+        {
+            "message": "Bienvenido a la API de ZoiaQua",
+            "project_name": "ZoiaQua Backend",
+            "version": "1.0.0",
+            "available_endpoints": [
+                {
+                    "path": "/api/token/",
+                    "method": "POST",
+                    "description": "Obtener token de autenticación",
+                },
+                {
+                    "path": "/api/token/refresh/",
+                    "method": "POST",
+                    "description": "Refrescar token de autenticación",
+                },
+                # Puedes agregar más endpoints según tu proyecto
+            ],
+            "documentation": "Consulta la documentación para más detalles",
+            "status": "Activo",
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):

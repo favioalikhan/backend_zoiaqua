@@ -25,8 +25,6 @@ SECRET_KEY = "django-insecure-2zz)kax$m!v)skyk$f2np*5awn948)hh@diurc=ijx-#8&thi!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -41,6 +39,7 @@ INSTALLED_APPS = [
     "rest_framework",
     # apps
     "api",
+    "backend",
 ]
 
 MIDDLEWARE = [
@@ -102,7 +101,7 @@ DATABASES = {
     }
 }
 
-ALLOWED_HOSTS = ["localhost", "web-production-0b68.up.railway.app"]
+ALLOWED_HOSTS = ["localhost", "web-production-0b68.up.railway.app", "127.0.0.1"]
 
 """
 # POSTGRESQL

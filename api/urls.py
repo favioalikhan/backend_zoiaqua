@@ -16,6 +16,7 @@ from .views import (
     ProductoViewSet,
     ReporteViewSet,
     RutaViewSet,
+    welcome_api_view,
 )
 
 router = routers.DefaultRouter()
@@ -34,6 +35,7 @@ router.register(r"reportes", ReporteViewSet)
 
 urlpatterns = [
     # Rutas de la API
+    path("", welcome_api_view, name="welcome"),
     path("api/", include(router.urls)),
     # Rutas para autenticación con JWT
     path("api/token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
