@@ -12,7 +12,13 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 
+import dj_database_url
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+
+load_dotenv()
+
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.dirname(PROJECT_DIR)
 
@@ -99,14 +105,14 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 # SQLITE
-
+"""
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
     }
 }
-
+"""
 ALLOWED_HOSTS = ["localhost", "web-production-0b68.up.railway.app", "127.0.0.1"]
 
 """
@@ -125,6 +131,16 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
+DATABASES = {
+    "default": dj_database_url.config(
+        # URL de la base de datos desde variable de entorno
+        default=os.getenv("DATABASE_URL"),
+        # Configuraciones adicionales
+        # conn_max_age=600,  # Mantener la conexión abierta por 10 minutos
+        conn_health_checks=True,  # Verificaciones de salud de la conexión
+        # ssl_require=False,  # Cambia a True si usas una base de datos con SSL
+    )
+}
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
