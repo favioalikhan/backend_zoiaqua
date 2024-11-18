@@ -133,18 +133,18 @@ DATABASES = {
 
 
 DATABASES = {
-    "default": dj_database_url.config(
-        # URL de la base de datos desde variable de entorno
-        default=os.getenv("DATABASE_URL"),
-        # Configuraciones adicionales
-        # conn_max_age=600,  # Mantener la conexión abierta por 10 minutos
-        conn_health_checks=True,  # Verificaciones de salud de la conexión
-        # ssl_require=False,  # Cambia a True si usas una base de datos con SSL
-    )
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        **dj_database_url.config(
+            # URL de la base de datos desde variable de entorno
+            default=os.getenv("DATABASE_URL"),
+            # Configuraciones adicionales
+            # conn_max_age=600,  # Mantener la conexión abierta por 10 minutos
+            conn_health_checks=True,  # Verificaciones de salud de la conexión
+            # ssl_require=False,  # Cambia a True si usas una base de datos con SSL
+        ),
+    }
 }
-
-if "DATABASE_URL" in os.environ:
-    DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
