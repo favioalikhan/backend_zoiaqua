@@ -1,0 +1,65 @@
+from django.contrib import admin
+
+from .models import (
+    KPI,
+    AsignacionRuta,
+    Cliente,
+    ClienteCluster,
+    ClusterGeografico,
+    ControlCalidad,
+    ControlProduccionAgua,
+    ControlSoploBotellas,
+    DetallePedido,
+    DetalleVenta,
+    Distribucion,
+    Empleado,
+    EmpleadoRol,
+    InsumoProduccion,
+    Inventario,
+    Kanban,
+    MensajeChatbot,
+    MovimientoInsumo,
+    MovimientoInventario,
+    Pedido,
+    Produccion,
+    Producto,
+    RegistroSesion,
+    Reporte,
+    Rol,
+    Ruta,
+    SeguimientoPedido,
+    SesionChatbot,
+    TokenRecuperacionContrasena,
+    Venta,
+)
+
+admin.site.register(Cliente)
+admin.site.register(Empleado)
+admin.site.register(Rol)
+admin.site.register(Producto)
+admin.site.register(Inventario)
+admin.site.register(MovimientoInventario)
+admin.site.register(EmpleadoRol)
+admin.site.register(ControlSoploBotellas)
+admin.site.register(ControlProduccionAgua)
+admin.site.register(InsumoProduccion)
+admin.site.register(MovimientoInsumo)
+admin.site.register(Pedido)
+admin.site.register(DetallePedido)
+admin.site.register(Venta)
+admin.site.register(DetalleVenta)
+admin.site.register(Produccion)
+admin.site.register(ControlCalidad)
+admin.site.register(Ruta)
+admin.site.register(AsignacionRuta)
+admin.site.register(Distribucion)
+admin.site.register(KPI)
+admin.site.register(Kanban)
+admin.site.register(ClusterGeografico)
+admin.site.register(ClienteCluster)
+admin.site.register(SesionChatbot)
+admin.site.register(MensajeChatbot)
+admin.site.register(TokenRecuperacionContrasena)
+admin.site.register(RegistroSesion)
+admin.site.register(SeguimientoPedido)
+admin.site.register(Reporte)
