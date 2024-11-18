@@ -131,6 +131,7 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
+
 DATABASES = {
     "default": dj_database_url.config(
         # URL de la base de datos desde variable de entorno
@@ -141,6 +142,9 @@ DATABASES = {
         # ssl_require=False,  # Cambia a True si usas una base de datos con SSL
     )
 }
+
+if "DATABASE_URL" in os.environ:
+    DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
