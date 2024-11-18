@@ -102,6 +102,8 @@ DATABASES = {
     }
 }
 
+ALLOWED_HOSTS = ["localhost", "web-production-0b68.up.railway.app"]
+
 """
 # POSTGRESQL
 DATABASES = {
