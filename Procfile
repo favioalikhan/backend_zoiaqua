@@ -1,1 +1,1 @@
-web: gunicorn backend.wsgi
+web: python manage.py collecstatic && gunicorn backend.wsgi
