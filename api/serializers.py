@@ -20,6 +20,8 @@ from .models import (
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = User.EMAIL_FIELD
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
