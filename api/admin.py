@@ -45,7 +45,25 @@ class CustomUserAdmin(BaseUserAdmin):
         "rol",
         "is_staff",
         "is_active",
-    )  # Añade los campos que quieres mostrar
+    )
+    fieldsets = (  # Personaliza la edición del usuario
+        (None, {"fields": ("email", "password")}),
+        ("Información Personal", {"fields": ("username", "rol")}),
+        (
+            "Permisos",
+            {"fields": ("is_staff", "is_active", "groups", "user_permissions")},
+        ),
+        ("Fechas Importantes", {"fields": ("last_login", "date_joined")}),
+    )
+    add_fieldsets = (  # Personaliza la creación de usuarios
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "username", "password1", "password2", "rol"),
+            },
+        ),
+    )
 
 
 admin.site.register(CustomUser, CustomUserAdmin)
