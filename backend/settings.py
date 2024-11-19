@@ -67,7 +67,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     # Añade aquí las URLs desde donde harás solicitudes
 ]
-
+CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = "backend.urls"
 
 TEMPLATES = [
