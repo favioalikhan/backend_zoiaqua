@@ -147,7 +147,6 @@ DATABASES = {
     }
 }
 
-SECURE_SSL_REDIRECT = True
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
