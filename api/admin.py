@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import (
     KPI,
@@ -9,6 +10,7 @@ from .models import (
     ControlCalidad,
     ControlProduccionAgua,
     ControlSoploBotellas,
+    CustomUser,
     DetallePedido,
     DetalleVenta,
     Distribucion,
@@ -33,6 +35,20 @@ from .models import (
     Venta,
 )
 
+
+class CustomUserAdmin(BaseUserAdmin):
+    model = CustomUser
+    list_display = (
+        "id",
+        "email",
+        "username",
+        "rol",
+        "is_staff",
+        "is_active",
+    )  # Añade los campos que quieres mostrar
+
+
+admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Cliente)
 admin.site.register(Empleado)
 admin.site.register(Rol)
