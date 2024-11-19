@@ -142,10 +142,16 @@ DATABASES = {
             # Configuraciones adicionales
             # conn_max_age=600,  # Mantener la conexión abierta por 10 minutos
             conn_health_checks=True,  # Verificaciones de salud de la conexión
-            # ssl_require=False,  # Cambia a True si usas una base de datos con SSL
+            ssl_require=True,  # Cambia a True si usas una base de datos con SSL
         ),
     }
 }
+
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
