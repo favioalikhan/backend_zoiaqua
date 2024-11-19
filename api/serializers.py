@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -6,6 +5,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
     KPI,
     ControlCalidad,
+    CustomUser,
     DetallePedido,
     Distribucion,
     Empleado,
@@ -20,7 +20,7 @@ from .models import (
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    username_field = User.EMAIL_FIELD
+    username_field = CustomUser.EMAIL_FIELD
 
     @classmethod
     def get_token(cls, user):
@@ -72,17 +72,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
+        model = CustomUser
         fields = ["id", "username", "email"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        if CustomUser.objects.filter(email=value).exists():
             raise ValidationError("Un usuario con este correo electrónico ya existe.")
         return value
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        user = CustomUser.objects.create_user(**validated_data)
         return user
 
 
@@ -96,7 +96,7 @@ class EmpleadoSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop("user")
-        user = User.objects.create_user(**user_data)
+        user = CustomUser.objects.create_user(**user_data)
         empleado = Empleado.objects.create(user=user, **validated_data)
         return empleado
 

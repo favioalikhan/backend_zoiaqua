@@ -1,13 +1,54 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import MinLengthValidator
 from django.db import models
 from django.utils import timezone
 
 
-class User(AbstractUser):
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, username, password=None, **extra_fields):
+        if not email:
+            raise ValueError("El Email es obligatorio")
+        email = self.normalize_email(email)
+        user = self.model(email=email, username=username, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, username, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return self.create_user(email, username, password, **extra_fields)
+
+
+class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True)
+    rol = models.CharField(max_length=50, default="user")
+
+    objects = CustomUserManager()
+
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
+
+    class Meta:
+        verbose_name = "usuario"
+        verbose_name_plural = "usuarios"
+
+    # Especifica nombres únicos para relaciones inversas
+    groups = models.ManyToManyField(
+        "auth.Group",
+        related_name="custom_user_set",  # Cambia el nombre por algo único
+        blank=True,
+        help_text="Los grupos a los que pertenece este usuario.",
+        verbose_name="grupos",
+    )
+    user_permissions = models.ManyToManyField(
+        "auth.Permission",
+        related_name="custom_user_set",  # Cambia el nombre por algo único
+        blank=True,
+        help_text="Permisos específicos del usuario.",
+        verbose_name="permisos de usuario",
+    )
 
 
 class Cliente(models.Model):
@@ -30,7 +71,7 @@ class Empleado(models.Model):
         ("activo", "Activo"),
         ("inactivo", "Inactivo"),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
     apellido = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
     email = models.EmailField(blank=True, max_length=254, null=True, unique=True)
