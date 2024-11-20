@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin, TabularInline
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import UserAdmin
 
 from .models import (
     KPI,
@@ -37,19 +37,25 @@ from .models import (
 )
 
 
-class CustomUserAdmin(BaseUserAdmin):
+class CustomUserAdmin(UserAdmin):
     model = CustomUser
     list_display = (
         "id",
-        "email",
         "username",
+        "email",
         "is_staff",
         "tipo_usuario",
         "is_active",
     )
+    list_filter = ("tipo_usuario", "is_staff", "is_active")
+    search_fields = ("username", "email")
+    ordering = ("username",)
     fieldsets = (  # Personaliza la edición del usuario
-        (None, {"fields": ("email", "password")}),
-        ("Información Personal", {"fields": ("username", "tipo_usuario")}),
+        (None, {"fields": ("username", "email", "password")}),
+        (
+            "Información Personal",
+            {"fields": ("first_name", "last_name", "tipo_usuario")},
+        ),
         (
             "Permisos",
             {"fields": ("is_staff", "is_active", "groups", "user_permissions")},
@@ -61,7 +67,7 @@ class CustomUserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "username", "password1", "password2"),
+                "fields": ("username", "email", "password1", "password2"),
             },
         ),
     )
