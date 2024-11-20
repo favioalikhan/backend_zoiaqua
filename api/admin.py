@@ -42,7 +42,6 @@ class CustomUserAdmin(BaseUserAdmin):
         "id",
         "email",
         "username",
-        "rol",
         "is_staff",
         "is_active",
     )
@@ -60,7 +59,7 @@ class CustomUserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "username", "password1", "password2", "rol"),
+                "fields": ("email", "username", "password1", "password2"),
             },
         ),
     )

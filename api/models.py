@@ -34,7 +34,6 @@ class CustomUser(AbstractUser):
         ],
         default="empleado",  # Por defecto, el usuario será empleado
     )
-    activo = models.BooleanField(default=True)
     eliminado = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
 
@@ -66,7 +65,7 @@ class CustomUser(AbstractUser):
 
     def delete(self, *args, **kwargs):
         """Sobrescribe la eliminación para aplicar una baja lógica."""
-        self.eliminado = True
+        self.is_active = False
         self.save()
 
 
