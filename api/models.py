@@ -110,7 +110,7 @@ class Cliente(models.Model):
         indexes = [models.Index(fields=["nombre"], name="idx_clientes_nombre")]
 
     def __str__(self):
-        return f"{self.nombre} {self.apellido}"
+        return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
 
 
 class Empleado(models.Model):
@@ -296,7 +296,7 @@ class Empleado(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} {self.apellido}"
+        return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
 
 
 class Rol(models.Model):
