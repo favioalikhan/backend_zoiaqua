@@ -142,7 +142,7 @@ DATABASES = {
             # Configuraciones adicionales
             # conn_max_age=600,  # Mantener la conexión abierta por 10 minutos
             conn_health_checks=True,  # Verificaciones de salud de la conexión
-            ssl_require=True,  # Cambia a True si usas una base de datos con SSL
+            # ssl_require=True,  # Cambia a True si usas una base de datos con SSL
         ),
     }
 }
