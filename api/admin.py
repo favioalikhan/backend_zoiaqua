@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import ModelAdmin, TabularInline, admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import (
@@ -66,14 +66,103 @@ class CustomUserAdmin(BaseUserAdmin):
     )
 
 
+class EmpleadoRolInline(TabularInline):
+    model = EmpleadoRol
+    extra = 1  # Para permitir agregar nuevos roles desde la página de administración
+    fields = ["rol", "es_rol_principal", "fecha_asignacion"]
+    readonly_fields = ["fecha_asignacion"]  # Hacer que la fecha sea de solo lectura
+    verbose_name = "Rol del Empleado"
+    verbose_name_plural = "Roles del Empleado"
+
+
+# Admin para el modelo Empleado
+class EmpleadoAdmin(ModelAdmin):
+    model = Empleado
+
+    # Incluir el inline para gestionar roles
+    inlines = [EmpleadoRolInline]
+
+    list_display = [
+        "user",
+        "nombre",
+        "apellido_paterno",
+        "apellido_materno",
+        "dni",
+        "departamento_principal",
+        "estado",
+        "acceso_sistema",
+    ]
+    list_filter = ["estado", "departamento_principal", "acceso_sistema"]
+    search_fields = ["user__username", "nombre", "apellido_paterno", "dni"]
+
+    fieldsets = (
+        (
+            "Información Personal",
+            {
+                "fields": (
+                    "user",
+                    "nombre",
+                    "apellido_paterno",
+                    "apellido_materno",
+                    "dni",
+                    "telefono",
+                    "direccion",
+                ),
+                "classes": ["tab"],
+            },
+        ),
+        (
+            "Información Laboral",
+            {
+                "fields": (
+                    "puesto",
+                    "departamento_principal",
+                    "estado",
+                    "fecha_contratacion",
+                    "acceso_sistema",
+                ),
+                "classes": ["tab"],
+            },
+        ),
+    )
+
+    # Optimización del queryset para mejorar el rendimiento
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("departamento_principal", "user")
+
+
+# Admin para el modelo EmpleadoRol
+class EmpleadoRolAdmin(ModelAdmin):
+    model = EmpleadoRol
+
+    list_display = ["empleado", "rol", "es_rol_principal", "fecha_asignacion"]
+    list_filter = ["es_rol_principal", "rol"]
+    search_fields = ["empleado__nombre", "empleado__dni", "rol__nombre"]
+
+    # Optimización del queryset
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("empleado", "rol")
+
+
+# Admin para el modelo Rol (si necesitas personalización)
+class RolAdmin(ModelAdmin):
+    model = Rol
+
+    list_display = ["nombre", "departamento"]
+    search_fields = ["nombre", "departamento__nombre"]
+    list_filter = ["departamento"]
+
+
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Cliente)
-admin.site.register(Empleado)
-admin.site.register(Rol)
+admin.site.register(Empleado, EmpleadoAdmin)
+admin.site.register(Rol, RolAdmin)
 admin.site.register(Producto)
 admin.site.register(Inventario)
 admin.site.register(MovimientoInventario)
-admin.site.register(EmpleadoRol)
+admin.site.register(EmpleadoRol, EmpleadoRolAdmin)
 admin.site.register(ControlSoploBotellas)
 admin.site.register(ControlProduccionAgua)
 admin.site.register(InsumoProduccion)
