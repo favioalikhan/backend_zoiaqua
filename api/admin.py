@@ -43,11 +43,12 @@ class CustomUserAdmin(BaseUserAdmin):
         "email",
         "username",
         "is_staff",
+        "tipo_usuario",
         "is_active",
     )
     fieldsets = (  # Personaliza la edición del usuario
         (None, {"fields": ("email", "password")}),
-        ("Información Personal", {"fields": ("username", "rol")}),
+        ("Información Personal", {"fields": ("username", "tipo_usuario")}),
         (
             "Permisos",
             {"fields": ("is_staff", "is_active", "groups", "user_permissions")},
