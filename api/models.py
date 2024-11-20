@@ -93,14 +93,6 @@ class CustomUser(AbstractUser):
         self.save()
 
     # Modificación para que `first_name` sea el `username`
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Redefine el getter y setter de `first_name` para que devuelva `username`
-        type(self).first_name = property(
-            lambda self: self.username,
-            lambda self, value: setattr(self, "username", value),
-        )
-
     def __str__(self):
         # Devuelve el `username` en lugar del `email`
         return self.username  # O si prefieres, también podrías usar self.first_name
