@@ -93,9 +93,6 @@ class CustomUser(AbstractUser):
         self.save()
 
     # Modificación para que `first_name` sea el `username`
-    def __str__(self):
-        # Devuelve el `username` en lugar del `email`
-        return self.username  # O si prefieres, también podrías usar self.first_name
 
 
 class Cliente(models.Model):
