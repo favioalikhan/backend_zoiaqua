@@ -30,7 +30,7 @@ BASE_DIR = os.path.dirname(PROJECT_DIR)
 SECRET_KEY = "django-insecure-2zz)kax$m!v)skyk$f2np*5awn948)hh@diurc=ijx-#8&thi!"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 
 # Application definition
