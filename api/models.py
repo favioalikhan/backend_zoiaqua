@@ -1,14 +1,22 @@
+import os
+
+import sendgrid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
-from django.core.validators import MinLengthValidator
+from django.core.validators import MinLengthValidator, RegexValidator
 from django.db import models
+from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.crypto import get_random_string
+from sendgrid.helpers.mail import Content, Email, Mail, To
 
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
             raise ValueError("El Email es obligatorio")
+        if not username:
+            username = self.generate_unique_username(email)
         email = self.normalize_email(email)
         extra_fields.setdefault("tipo_usuario", "empleado")
         user = self.model(email=email, username=username, **extra_fields)
@@ -16,13 +24,29 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, username, password=None, **extra_fields):
+    def create_superuser(self, email, username=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("tipo_usuario", "administrador")
         if extra_fields.get("tipo_usuario") != "administrador":
             raise ValueError("El superusuario debe ser de tipo administrador.")
         return self.create_user(email, username, password, **extra_fields)
+
+    def generate_unique_username(self, email):
+        """
+        Genera un username único basado en el email
+        """
+        # Usa la parte antes del @ del email como base
+        base_username = email.split("@")[0]
+
+        # Añade un string aleatorio para asegurar unicidad
+        username = f"{base_username}_{get_random_string(5)}"
+
+        # Verifica que el username sea único
+        while self.model.objects.filter(username=username).exists():
+            username = f"{base_username}_{get_random_string(5)}"
+
+        return username
 
 
 class CustomUser(AbstractUser):
@@ -41,7 +65,7 @@ class CustomUser(AbstractUser):
 
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS = []
 
     class Meta:
         verbose_name = "usuario"
@@ -96,10 +120,27 @@ class Empleado(models.Model):
         ("licencia", "Licencia"),
         ("retirado", "Retirado"),
     ]
-    email = models.EmailField(blank=True, max_length=254, null=True, unique=True)
+
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
-    apellido = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
+    apellido_paterno = models.CharField(
+        max_length=100, validators=[MinLengthValidator(1)]
+    )
+    apellido_materno = models.CharField(
+        max_length=100, validators=[MinLengthValidator(1)]
+    )
+    dni = models.CharField(
+        max_length=20,
+        unique=True,  # Asegura que no haya DNIs duplicados
+        validators=[
+            RegexValidator(
+                regex=r"^\d{8}$",  # Validación para DNI peruano (8 dígitos)
+                message="El DNI debe contener 8 dígitos numéricos",
+                code="invalid_dni",
+            )
+        ],
+        verbose_name="Documento de Identidad",
+    )
     telefono = models.CharField(max_length=20, null=True, blank=True)
     direccion = models.TextField(null=True, blank=True)
     fecha_contratacion = models.DateTimeField()
@@ -112,14 +153,25 @@ class Empleado(models.Model):
         related_name="empleados_principales",
     )
     roles = models.ManyToManyField("Rol", through="EmpleadoRol")
+    acceso_sistema = models.BooleanField(
+        default=False, verbose_name="Requiere acceso al sistema"
+    )
 
     class Meta:
-        indexes = [models.Index(fields=["email"], name="idx_empleados_email")]
+        indexes = [models.Index(fields=["user"], name="idx_empleados_user")]
 
-    def save(self, *args, **kwargs):
-        if self.user:
-            self.email = self.user.email
-        super().save(*args, **kwargs)
+    def validar_dni(self):
+        """
+        Método adicional para validaciones más complejas del DNI
+        """
+        # Ejemplo de validación (puedes agregar más lógica si es necesario)
+        if not self.dni or len(self.dni) != 8:
+            raise ValidationError("El DNI debe tener 8 dígitos")
+
+        if not self.dni.isdigit():
+            raise ValidationError("El DNI solo debe contener números")
+
+        return True
 
     def establecer_rol_principal(self, rol_id):
         """
@@ -142,6 +194,107 @@ class Empleado(models.Model):
         """Retorna el rol principal del empleado"""
         return self.empleadorol_set.filter(es_rol_principal=True).first()
 
+    def tiene_acceso_sistema(self):
+        """
+        Determina si el empleado requiere acceso al sistema
+        basándose en sus roles o configuración específica
+        """
+        # Verifica si alguno de sus roles requiere acceso al sistema
+        return (
+            self.acceso_sistema
+            or self.roles.filter(requiere_acceso_sistema=True).exists()
+        )
+
+    def generar_credenciales(self):
+        if self.tiene_acceso_sistema():
+            # Si ya tiene un usuario asociado, generamos solo la contraseña temporal
+            if self.user:
+                # Regeneramos la contraseña temporal
+                password_temporal = self.generar_password_temporal()
+                self.user.set_password(password_temporal)
+                self.user.is_active = True  # Activamos el usuario si estaba desactivado
+                self.user.save()
+
+                credenciales = {
+                    "username": self.user.username,
+                    "email": self.user.email,
+                    "password_temporal": password_temporal,
+                    "mensaje": "Credenciales actualizadas para usuario existente",
+                }
+
+                self.enviar_credenciales_por_email(credenciales, empleado=self)
+
+                return credenciales
+
+        return None
+
+    def generar_password_temporal(self):
+        # Genera una contraseña temporal segura
+        return CustomUser.objects.make_random_password(
+            length=12,
+            allowed_chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*",
+        )
+
+    def enviar_credenciales_por_email(credenciales, empleado=None):
+        """
+        Envía credenciales de acceso al sistema por correo electrónico usando SendGrid
+
+        :param credenciales: Diccionario con información de credenciales
+        :param empleado: Instancia del empleado (opcional, para información adicional)
+        :return: Respuesta de SendGrid o None si falla
+        """
+        try:
+            # Inicializar cliente de SendGrid
+            sg = sendgrid.SendGridAPIClient(api_key=os.getenv("SENDGRID_API_KEY"))
+
+            # Correo remitente (debe ser un correo verificado)
+            from_email = Email("favio_alikhan30@hotmail.com")
+
+            # Correo destinatario
+            to_email = To(credenciales["email"])
+
+            # Asunto del correo
+            subject = "Credenciales de Acceso al Sistema"
+
+            # Preparar contexto para la plantilla
+            context = {
+                "nombre_empleado": empleado.nombre if empleado else "Estimado Empleado",
+                "username": credenciales["username"],
+                "email": credenciales["email"],
+                "password_temporal": credenciales["password_temporal"],
+            }
+
+            # Renderizar plantilla de correo
+            email_template_name = "api/credenciales.html"
+            email_body = render_to_string(email_template_name, context)
+
+            # Contenido del correo
+            content = Content("text/html", email_body)
+
+            # Crear correo
+            mail = Mail(from_email, to_email, subject, content)
+
+            # Enviar correo
+            response = sg.send(mail)
+
+            # Imprimir detalles de la respuesta (opcional, para depuración)
+            print(f"SendGrid response status code: {response.status_code}")
+            print(f"SendGrid response body: {response.body}")
+            print(f"SendGrid response headers: {response.headers}")
+
+            return response
+
+        except Exception as e:
+            # Loguear el error
+            print(f"Error al enviar credenciales por email: {str(e)}")
+            return None
+
+    def save(self, *args, **kwargs):
+        if self.user:
+            self.email = self.user.email
+        self.validar_dni()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.nombre} {self.apellido}"
 
@@ -152,6 +305,7 @@ class Rol(models.Model):
     departamento = models.ForeignKey(
         "Departamento", on_delete=models.CASCADE, related_name="roles"
     )
+    requiere_acceso_sistema = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.nombre} - {self.departamento}"
@@ -569,4 +723,5 @@ class Reporte(models.Model):
     )
 
     def __str__(self):
+        return self.titulo
         return self.titulo

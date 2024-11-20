@@ -114,7 +114,7 @@ DATABASES = {
 }
 """
 ALLOWED_HOSTS = ["localhost", "web-production-0b68.up.railway.app", "127.0.0.1"]
-
+DOMAIN = "web-production-0b68.up.railway.app"
 """
 # POSTGRESQL
 DATABASES = {

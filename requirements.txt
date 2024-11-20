@@ -14,7 +14,10 @@ psycopg2-binary==2.9.10
 pycparser==2.22
 PyJWT==2.10.0
 python-dotenv==1.0.1
+python-http-client==3.3.7
+sendgrid==6.11.0
 sqlparse==0.5.2
+starkbank-ecdsa==2.2.0
 typing_extensions==4.12.2
 tzdata==2024.2
 whitenoise==6.8.2
