@@ -11,6 +11,7 @@ from .models import (
     ControlProduccionAgua,
     ControlSoploBotellas,
     CustomUser,
+    Departamento,
     DetallePedido,
     DetalleVenta,
     Distribucion,
@@ -31,7 +32,6 @@ from .models import (
     Ruta,
     SeguimientoPedido,
     SesionChatbot,
-    TokenRecuperacionContrasena,
     Venta,
 )
 
@@ -93,7 +93,7 @@ admin.site.register(ClusterGeografico)
 admin.site.register(ClienteCluster)
 admin.site.register(SesionChatbot)
 admin.site.register(MensajeChatbot)
-admin.site.register(TokenRecuperacionContrasena)
+admin.site.register(Departamento)
 admin.site.register(RegistroSesion)
 admin.site.register(SeguimientoPedido)
 admin.site.register(Reporte)

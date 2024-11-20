@@ -116,6 +116,52 @@ class EmpleadoSerializer(serializers.ModelSerializer):
         return instance
 
 
+class EmpleadoRegistroSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    confirmar_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Empleado
+        fields = [
+            "id",
+            "nombre",
+            "apellido",
+            "email",
+            "telefono",
+            "direccion",
+            "ciudad",
+            "codigo_postal",
+            "fecha_contratacion",
+            "puesto",
+            "estado",
+            "password",
+            "confirmar_password",
+        ]
+
+    def validate(self, data):
+        if data["password"] != data["confirmar_password"]:
+            raise serializers.ValidationError("Las contraseñas no coinciden.")
+        return data
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        validated_data.pop("confirmar_password")
+
+        email = validated_data.get("email")
+
+        # Crear el CustomUser
+        user = CustomUser.objects.create_user(
+            email=email,
+            username=email,  # Puedes usar el email como username
+            password=password,
+        )
+
+        # Crear el Empleado asociado
+        empleado = Empleado.objects.create(user=user, **validated_data)
+
+        return empleado
+
+
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto

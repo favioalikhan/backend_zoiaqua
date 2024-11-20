@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
 from django.utils import timezone
@@ -9,6 +10,7 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError("El Email es obligatorio")
         email = self.normalize_email(email)
+        extra_fields.setdefault("tipo_usuario", "empleado")
         user = self.model(email=email, username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -17,12 +19,24 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, username, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("tipo_usuario", "administrador")
+        if extra_fields.get("tipo_usuario") != "administrador":
+            raise ValueError("El superusuario debe ser de tipo administrador.")
         return self.create_user(email, username, password, **extra_fields)
 
 
 class CustomUser(AbstractUser):
+    tipo_usuario = models.CharField(
+        max_length=20,
+        choices=[
+            ("empleado", "Empleado"),
+            ("administrador", "Administrador"),
+        ],
+        default="empleado",  # Por defecto, el usuario será empleado
+    )
+    activo = models.BooleanField(default=True)
+    eliminado = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
-    rol = models.CharField(max_length=50, default="user")
 
     objects = CustomUserManager()
 
@@ -50,10 +64,20 @@ class CustomUser(AbstractUser):
         verbose_name="permisos de usuario",
     )
 
+    def delete(self, *args, **kwargs):
+        """Sobrescribe la eliminación para aplicar una baja lógica."""
+        self.eliminado = True
+        self.save()
+
 
 class Cliente(models.Model):
     nombre = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
-    apellido = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
+    apellido_paterno = models.CharField(
+        max_length=100, validators=[MinLengthValidator(1)]
+    )
+    apellido_materno = models.CharField(
+        max_length=100, validators=[MinLengthValidator(1)]
+    )
     telefono = models.CharField(max_length=20, null=True, blank=True)
     direccion = models.TextField()
     ciudad = models.CharField(max_length=100, null=True, blank=True)
@@ -70,18 +94,24 @@ class Empleado(models.Model):
     ESTADO_CHOICES = [
         ("activo", "Activo"),
         ("inactivo", "Inactivo"),
+        ("licencia", "Licencia"),
+        ("retirado", "Retirado"),
     ]
+    email = models.EmailField(blank=True, max_length=254, null=True, unique=True)
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
     apellido = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
-    email = models.EmailField(blank=True, max_length=254, null=True, unique=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
     direccion = models.TextField(null=True, blank=True)
-    ciudad = models.CharField(max_length=100, null=True, blank=True)
-    codigo_postal = models.CharField(max_length=10, null=True, blank=True)
     fecha_contratacion = models.DateTimeField()
     puesto = models.CharField(max_length=50, validators=[MinLengthValidator(1)])
-    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default="inactivo")
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default="activo")
+    departamento_principal = models.ForeignKey(
+        "Departamento",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="empleados_principales",
+    )
     roles = models.ManyToManyField("Rol", through="EmpleadoRol")
 
     class Meta:
@@ -92,24 +122,76 @@ class Empleado(models.Model):
             self.email = self.user.email
         super().save(*args, **kwargs)
 
+    def establecer_rol_principal(self, rol_id):
+        """
+        Establece un rol específico como principal y los demás como secundarios
+        """
+        try:
+            nuevo_rol_principal = self.empleadorol_set.get(rol_id=rol_id)
+        except EmpleadoRol.DoesNotExist:
+            raise ValueError("El empleado no tiene asignado este rol")
+
+        # Actualizamos todos los roles a no principales
+        self.empleadorol_set.update(es_rol_principal=False)
+
+        # Establecemos el nuevo rol principal
+        nuevo_rol_principal.es_rol_principal = True
+        nuevo_rol_principal.save()
+
+    @property
+    def rol_principal(self):
+        """Retorna el rol principal del empleado"""
+        return self.empleadorol_set.filter(es_rol_principal=True).first()
+
     def __str__(self):
         return f"{self.nombre} {self.apellido}"
 
 
 class Rol(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
-    descripcion = models.TextField(null=True, blank=True)
+    responsabilidades = models.TextField(null=True, blank=True)
+    departamento = models.ForeignKey(
+        "Departamento", on_delete=models.CASCADE, related_name="roles"
+    )
 
     def __str__(self):
-        return self.nombre
+        return f"{self.nombre} - {self.departamento}"
 
 
 class EmpleadoRol(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
-    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
+    rol = models.ForeignKey(
+        Rol, on_delete=models.CASCADE, related_name="empleado_roles"
+    )
+    es_rol_principal = models.BooleanField(default=False)
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ("empleado", "rol")
+
+    def clean(self):
+        # Validar que solo exista un rol principal por empleado
+        if self.es_rol_principal:
+            roles_principales = EmpleadoRol.objects.filter(
+                empleado=self.empleado, es_rol_principal=True
+            ).exclude(pk=self.pk)
+            if roles_principales.exists():
+                raise ValidationError("El empleado ya tiene un rol principal asignado.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.empleado} - {self.rol} ({'Principal' if self.es_rol_principal else 'Secundario'})"
+
+
+class Departamento(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.nombre
 
 
 class Producto(models.Model):
@@ -443,22 +525,6 @@ class MensajeChatbot(models.Model):
 
     class Meta:
         db_table = "mensajes_chatbot"
-
-
-class TokenRecuperacionContrasena(models.Model):
-    TIPO_USUARIO_CHOICES = [
-        ("empleado", "Empleado"),
-    ]
-
-    usuario_id = models.IntegerField()
-    tipo_usuario = models.CharField(max_length=10, choices=TIPO_USUARIO_CHOICES)
-    token = models.CharField(max_length=255, unique=True)
-    fecha_creacion = models.DateTimeField(default=timezone.now)
-    fecha_expiracion = models.DateTimeField()
-    usado = models.BooleanField(default=False)
-
-    class Meta:
-        db_table = "tokens_recuperacion_contrasena"
 
 
 class RegistroSesion(models.Model):

@@ -1,4 +1,4 @@
-from rest_framework import status, viewsets
+from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -23,6 +23,7 @@ from .serializers import (
     CustomTokenObtainPairSerializer,
     DetallePedidoSerializer,
     DistribucionSerializer,
+    EmpleadoRegistroSerializer,
     EmpleadoSerializer,
     InventarioSerializer,
     KPISerializer,
@@ -80,6 +81,12 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+
+
+class EmpleadoRegistroView(generics.CreateAPIView):
+    queryset = Empleado.objects.all()
+    serializer_class = EmpleadoRegistroSerializer
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
 
 
 # Vista para Producto
