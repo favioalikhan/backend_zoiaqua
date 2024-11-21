@@ -15,9 +15,12 @@ class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
             raise ValueError("El Email es obligatorio")
-        if not username:
-            username = self.generate_unique_username(email)
+        username, first_name, last_name = self.generate_unique_user_data(email)
+
         email = self.normalize_email(email)
+        extra_fields.setdefault("first_name", first_name)
+        extra_fields.setdefault("last_name", last_name)
+
         extra_fields.setdefault("tipo_usuario", "empleado")
         user = self.model(email=email, username=username, **extra_fields)
         user.set_password(password)
@@ -25,6 +28,9 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, username=None, password=None, **extra_fields):
+        username, first_name, last_name = self.generate_unique_user_data(email)
+        extra_fields.setdefault("first_name", first_name)
+        extra_fields.setdefault("last_name", last_name)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("tipo_usuario", "administrador")
@@ -32,21 +38,30 @@ class CustomUserManager(BaseUserManager):
             raise ValueError("El superusuario debe ser de tipo administrador.")
         return self.create_user(email, username, password, **extra_fields)
 
-    def generate_unique_username(self, email):
+    def generate_unique_user_data(self, email):
         """
-        Genera un username único basado en el email
+        Genera un username, first_name y last_name único basado en el email
         """
         # Usa la parte antes del @ del email como base
         base_username = email.split("@")[0]
 
-        # Añade un string aleatorio para asegurar unicidad
-        username = f"{base_username}_{get_random_string(5)}"
+        # Generar un string aleatorio para asegurar unicidad
+        random_string = get_random_string(5)
 
-        # Verifica que el username sea único
+        # Autogenerar username
+        username = f"{base_username}_{random_string}"
+
+        # Autogenerar first_name y last_name basados en el email
+        first_name = base_username.capitalize()
+        last_name = f"{random_string.capitalize()}"
+
+        # Verificar que el username sea único
         while self.model.objects.filter(username=username).exists():
-            username = f"{base_username}_{get_random_string(5)}"
+            random_string = get_random_string(5)
+            username = f"{base_username}_{random_string}"
+            last_name = f"{random_string.capitalize()}"
 
-        return username
+        return username, first_name, last_name
 
 
 class CustomUser(AbstractUser):
@@ -91,8 +106,6 @@ class CustomUser(AbstractUser):
         """Sobrescribe la eliminación para aplicar una baja lógica."""
         self.is_active = False
         self.save()
-
-    # Modificación para que `first_name` sea el `username`
 
 
 class Cliente(models.Model):
