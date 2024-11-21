@@ -240,46 +240,46 @@ class RolAdmin(ModelAdmin):
 
 
 # Usuarios y Gestión de Personal
-custom_admin_site.site.register(CustomUser, CustomUserAdmin)
-custom_admin_site.site.register(Empleado, EmpleadoAdmin)
-custom_admin_site.site.register(Rol, RolAdmin)
-custom_admin_site.site.register(EmpleadoRol, EmpleadoRolAdmin)
-custom_admin_site.site.register(Departamento)
-custom_admin_site.site.register(RegistroSesion)
+custom_admin_site.register(CustomUser, CustomUserAdmin)
+custom_admin_site.register(Empleado, EmpleadoAdmin)
+custom_admin_site.register(Rol, RolAdmin)
+custom_admin_site.register(EmpleadoRol, EmpleadoRolAdmin)
+custom_admin_site.register(Departamento)
+custom_admin_site.register(RegistroSesion)
 
 # Clientes
-custom_admin_site.site.register(Cliente)
-custom_admin_site.site.register(ClienteCluster)
-custom_admin_site.site.register(ClusterGeografico)
-custom_admin_site.site.register(SeguimientoPedido)
+custom_admin_site.register(Cliente)
+custom_admin_site.register(ClienteCluster)
+custom_admin_site.register(ClusterGeografico)
+custom_admin_site.register(SeguimientoPedido)
 
 # Productos e Inventario
-custom_admin_site.site.register(Producto)
-custom_admin_site.site.register(Inventario)
-custom_admin_site.site.register(MovimientoInventario)
-custom_admin_site.site.register(InsumoProduccion)
-custom_admin_site.site.register(MovimientoInsumo)
+custom_admin_site.register(Producto)
+custom_admin_site.register(Inventario)
+custom_admin_site.register(MovimientoInventario)
+custom_admin_site.register(InsumoProduccion)
+custom_admin_site.register(MovimientoInsumo)
 
 # Ventas y Pedidos
-custom_admin_site.site.register(Pedido)
-custom_admin_site.site.register(DetallePedido)
-custom_admin_site.site.register(Venta)
-custom_admin_site.site.register(DetalleVenta)
-custom_admin_site.site.register(Ruta)
-custom_admin_site.site.register(AsignacionRuta)
-custom_admin_site.site.register(Distribucion)
+custom_admin_site.register(Pedido)
+custom_admin_site.register(DetallePedido)
+custom_admin_site.register(Venta)
+custom_admin_site.register(DetalleVenta)
+custom_admin_site.register(Ruta)
+custom_admin_site.register(AsignacionRuta)
+custom_admin_site.register(Distribucion)
 
 # Producción y Control de Calidad
-custom_admin_site.site.register(Produccion)
-custom_admin_site.site.register(ControlCalidad)
-custom_admin_site.site.register(ControlProduccionAgua)
-custom_admin_site.site.register(ControlSoploBotellas)
+custom_admin_site.register(Produccion)
+custom_admin_site.register(ControlCalidad)
+custom_admin_site.register(ControlProduccionAgua)
+custom_admin_site.register(ControlSoploBotellas)
 
 # Gestión de Rendimiento
-custom_admin_site.site.register(KPI)
-custom_admin_site.site.register(Kanban)
-custom_admin_site.site.register(Reporte)
+custom_admin_site.register(KPI)
+custom_admin_site.register(Kanban)
+custom_admin_site.register(Reporte)
 
 # Chatbot
-custom_admin_site.site.register(SesionChatbot)
-custom_admin_site.site.register(MensajeChatbot)
+custom_admin_site.register(SesionChatbot)
+custom_admin_site.register(MensajeChatbot)
