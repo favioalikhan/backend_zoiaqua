@@ -1,5 +1,4 @@
-from django.contrib import admin
-from django.contrib.admin import ModelAdmin, TabularInline
+from django.contrib.admin import AdminSite, ModelAdmin, TabularInline
 from django.contrib.auth.admin import UserAdmin
 
 from .models import (
@@ -35,6 +34,79 @@ from .models import (
     SesionChatbot,
     Venta,
 )
+
+
+class CustomAdminSite(AdminSite):
+    site_header = "Panel de Administración"
+    site_title = "Administración del Sistema"
+    index_title = "Categorías"
+
+    def get_app_list(self, request):
+        """
+        Sobrescribe la función para personalizar las categorías y modelos.
+        """
+        app_list = super().get_app_list(request)
+
+        # Definir categorías personalizadas
+        categories = {
+            "Usuarios y Gestión de Personal": [
+                "CustomUser",
+                "Empleado",
+                "Rol",
+                "EmpleadoRol",
+                "Departamento",
+                "RegistroSesion",
+            ],
+            "Clientes": [
+                "Cliente",
+                "ClienteCluster",
+                "ClusterGeografico",
+                "SeguimientoPedido",
+            ],
+            "Productos e Inventario": [
+                "Producto",
+                "Inventario",
+                "MovimientoInventario",
+                "InsumoProduccion",
+                "MovimientoInsumo",
+            ],
+            "Ventas y Pedidos": [
+                "Pedido",
+                "DetallePedido",
+                "Venta",
+                "DetalleVenta",
+                "Ruta",
+                "AsignacionRuta",
+                "Distribucion",
+            ],
+            "Producción y Control de Calidad": [
+                "Produccion",
+                "ControlCalidad",
+                "ControlProduccionAgua",
+                "ControlSoploBotellas",
+            ],
+            "Gestión de Rendimiento": ["KPI", "Kanban", "Reporte"],
+            "Chatbot": ["SesionChatbot", "MensajeChatbot"],
+        }
+
+        # Organizar los modelos en categorías
+        categorized_apps = []
+        for category_name, model_names in categories.items():
+            category_models = []
+            for app in app_list:
+                for model in app["models"]:
+                    if model["object_name"] in model_names:
+                        category_models.append(model)
+
+            if category_models:
+                categorized_apps.append(
+                    {"name": category_name, "models": category_models}
+                )
+
+        return categorized_apps
+
+
+custom_admin_site = CustomAdminSite(name="custom_admin")
 
 
 class CustomUserAdmin(UserAdmin):
@@ -93,9 +165,6 @@ class EmpleadoRolInline(TabularInline):
 class EmpleadoAdmin(ModelAdmin):
     model = Empleado
 
-    # Incluir el inline para gestionar roles
-    inlines = [EmpleadoRolInline]
-
     list_display = [
         "user",
         "nombre",
@@ -150,6 +219,7 @@ class EmpleadoAdmin(ModelAdmin):
 class EmpleadoRolAdmin(ModelAdmin):
     model = EmpleadoRol
 
+    inlines = [EmpleadoRolInline]
     list_display = ["empleado", "rol", "es_rol_principal", "fecha_asignacion"]
     list_filter = ["es_rol_principal", "rol"]
     search_fields = ["empleado__nombre", "empleado__dni", "rol__nombre"]
@@ -169,34 +239,47 @@ class RolAdmin(ModelAdmin):
     list_filter = ["departamento"]
 
 
-admin.site.register(CustomUser, CustomUserAdmin)
-admin.site.register(Cliente)
-admin.site.register(Empleado, EmpleadoAdmin)
-admin.site.register(Rol, RolAdmin)
-admin.site.register(Producto)
-admin.site.register(Inventario)
-admin.site.register(MovimientoInventario)
-admin.site.register(EmpleadoRol, EmpleadoRolAdmin)
-admin.site.register(ControlSoploBotellas)
-admin.site.register(ControlProduccionAgua)
-admin.site.register(InsumoProduccion)
-admin.site.register(MovimientoInsumo)
-admin.site.register(Pedido)
-admin.site.register(DetallePedido)
-admin.site.register(Venta)
-admin.site.register(DetalleVenta)
-admin.site.register(Produccion)
-admin.site.register(ControlCalidad)
-admin.site.register(Ruta)
-admin.site.register(AsignacionRuta)
-admin.site.register(Distribucion)
-admin.site.register(KPI)
-admin.site.register(Kanban)
-admin.site.register(ClusterGeografico)
-admin.site.register(ClienteCluster)
-admin.site.register(SesionChatbot)
-admin.site.register(MensajeChatbot)
-admin.site.register(Departamento)
-admin.site.register(RegistroSesion)
-admin.site.register(SeguimientoPedido)
-admin.site.register(Reporte)
+# Usuarios y Gestión de Personal
+custom_admin_site.site.register(CustomUser, CustomUserAdmin)
+custom_admin_site.site.register(Empleado, EmpleadoAdmin)
+custom_admin_site.site.register(Rol, RolAdmin)
+custom_admin_site.site.register(EmpleadoRol, EmpleadoRolAdmin)
+custom_admin_site.site.register(Departamento)
+custom_admin_site.site.register(RegistroSesion)
+
+# Clientes
+custom_admin_site.site.register(Cliente)
+custom_admin_site.site.register(ClienteCluster)
+custom_admin_site.site.register(ClusterGeografico)
+custom_admin_site.site.register(SeguimientoPedido)
+
+# Productos e Inventario
+custom_admin_site.site.register(Producto)
+custom_admin_site.site.register(Inventario)
+custom_admin_site.site.register(MovimientoInventario)
+custom_admin_site.site.register(InsumoProduccion)
+custom_admin_site.site.register(MovimientoInsumo)
+
+# Ventas y Pedidos
+custom_admin_site.site.register(Pedido)
+custom_admin_site.site.register(DetallePedido)
+custom_admin_site.site.register(Venta)
+custom_admin_site.site.register(DetalleVenta)
+custom_admin_site.site.register(Ruta)
+custom_admin_site.site.register(AsignacionRuta)
+custom_admin_site.site.register(Distribucion)
+
+# Producción y Control de Calidad
+custom_admin_site.site.register(Produccion)
+custom_admin_site.site.register(ControlCalidad)
+custom_admin_site.site.register(ControlProduccionAgua)
+custom_admin_site.site.register(ControlSoploBotellas)
+
+# Gestión de Rendimiento
+custom_admin_site.site.register(KPI)
+custom_admin_site.site.register(Kanban)
+custom_admin_site.site.register(Reporte)
+
+# Chatbot
+custom_admin_site.site.register(SesionChatbot)
+custom_admin_site.site.register(MensajeChatbot)
