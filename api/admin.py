@@ -72,6 +72,13 @@ class CustomUserAdmin(UserAdmin):
         ),
     )
 
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["total_users"] = (
+            CustomUser.objects.count()
+        )  # Obtén el total de usuarios
+        return super().changelist_view(request, extra_context=extra_context)
+
 
 class EmpleadoRolInline(TabularInline):
     model = EmpleadoRol
