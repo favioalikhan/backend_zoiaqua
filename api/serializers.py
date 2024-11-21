@@ -43,29 +43,45 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        # Validación inicial y autenticación del usuario
         data = super().validate(attrs)
+
+        # Obtener el usuario autenticado
+        user = self.user
+
+        # Verificar si el usuario está activo
+        if not user.is_active:
+            raise serializers.ValidationError("La cuenta está desactivada.")
+
+        # Intentar obtener el Empleado asociado
+        try:
+            empleado = Empleado.objects.get(user=user)
+        except Empleado.DoesNotExist:
+            raise serializers.ValidationError(
+                "No tiene permisos para acceder al sistema."
+            )
+
+        # Verificar si el empleado tiene acceso al sistema
+        if not empleado.tiene_acceso_sistema():
+            raise serializers.ValidationError(
+                "No tiene permisos para acceder al sistema."
+            )
 
         # Agregar información adicional a la respuesta
         data.update(
             {
-                "username": self.user.username,
-                "email": self.user.email,
+                "username": user.username,
+                "email": user.email,
+                "nombre": empleado.nombre,
+                "apellido_paterno": empleado.apellido_paterno,
+                "apellido_materno": empleado.apellido_materno,
+                "puesto": empleado.puesto,
             }
         )
 
-        # Agregar información del empleado
-        try:
-            empleado = Empleado.objects.get(user=self.user)
-            data.update(
-                {
-                    "nombre": empleado.nombre,
-                    "apellido": empleado.apellido,
-                    "puesto": empleado.puesto,
-                    # Agrega otros campos según sea necesario
-                }
-            )
-        except Empleado.DoesNotExist:
-            pass
+        # Opcional: Agregar roles y permisos
+        roles = empleado.roles.values("nombre", "requiere_acceso_sistema")
+        data.update({"roles": list(roles)})
 
         return data
 
