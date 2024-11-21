@@ -1,6 +1,8 @@
+from django.contrib import messages
 from django.contrib.admin import AdminSite, ModelAdmin, TabularInline
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group, Permission
+from django.db import transaction
 
 from .models import (
     KPI,
@@ -222,27 +224,37 @@ class EmpleadoAdmin(ModelAdmin):
         qs = super().get_queryset(request)
         return qs.select_related("departamento_principal", "user")
 
+    @transaction.atomic
     def save_model(self, request, obj, form, change):
-        """Guarda el modelo principal (Empleado)"""
+        """Guarda el modelo Empleado y guarda la referencia"""
         super().save_model(request, obj, form, change)
-        # Guardamos el ID del empleado para usarlo en save_formset
         self._saved_empleado = obj
 
+    @transaction.atomic
     def save_formset(self, request, form, formset, change):
-        """Guarda los formularios inline (EmpleadoRol) después de que el empleado existe"""
-        instances = formset.save(commit=False)
+        """Guarda los roles del empleado usando la referencia guardada"""
+        if not hasattr(self, "_saved_empleado"):
+            return
 
-        # Guardamos o actualizamos cada instancia del formset
-        for instance in instances:
-            if not instance.empleado_id:  # Si es nuevo rol
+        try:
+            instances = formset.save(commit=False)
+
+            # Asignamos el empleado guardado a cada rol nuevo
+            for instance in instances:
                 instance.empleado = self._saved_empleado
-            instance.save()
+                instance.save()
 
-        # Elimina los objetos marcados para eliminación
-        for obj in formset.deleted_objects:
-            obj.delete()
+            # Eliminamos los roles marcados para eliminar
+            for obj in formset.deleted_objects:
+                obj.delete()
 
-        formset.save_m2m()
+            # Guardamos las relaciones many-to-many si existen
+            formset.save_m2m()
+
+        except Exception as e:
+            transaction.set_rollback(True)
+            messages.error(request, f"Error al guardar los roles: {str(e)}")
+            raise
 
 
 # Admin para el modelo EmpleadoRol
