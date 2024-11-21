@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin import ModelAdmin, TabularInline
 from django.contrib.auth.admin import UserAdmin
 from django.forms import inlineformset_factory
@@ -161,6 +161,10 @@ class EmpleadoAdmin(ModelAdmin):
 
             if formset.is_valid():
                 formset.save()
+
+            else:
+                # Opcional: Manejar errores de validación si los hubiera
+                messages.error(request, "Hubo un error al guardar los roles.")
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
