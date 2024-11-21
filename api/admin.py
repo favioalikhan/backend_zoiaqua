@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin, TabularInline
 from django.contrib.auth.admin import UserAdmin
+from django.forms import inlineformset_factory
 
 from .models import (
     KPI,
@@ -144,6 +145,30 @@ class EmpleadoAdmin(ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("departamento_principal", "user")
+
+    def save_model(self, request, obj, form, change):
+        # Primero, guarda el empleado
+        super().save_model(request, obj, form, change)
+
+        # Limpia los roles existentes del empleado
+        obj.empleadorol_set.all().delete()
+
+        # Obtén los roles desde el inline
+        rol_formset = inlineformset_factory(
+            Empleado, EmpleadoRol, fields=("rol", "es_rol_principal"), extra=0
+        )
+
+        # Si necesitas los roles desde el inline, procesa el formset
+        if request.POST.get("empleadorol_set-TOTAL_FORMS"):
+            formset = rol_formset(request.POST, instance=obj)
+
+            if formset.is_valid():
+                formset.save()
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.obj = obj  # Pasa el objeto al formulario si es una edición
+        return form
 
 
 # Admin para el modelo EmpleadoRol
