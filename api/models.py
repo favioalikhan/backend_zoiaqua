@@ -2,7 +2,7 @@ import os
 
 import sendgrid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-from django.core.exceptions import ValidationError
+from django.core import ValidationError
 from django.core.validators import MinLengthValidator, RegexValidator
 from django.db import models
 from django.template.loader import render_to_string
@@ -237,7 +237,7 @@ class Empleado(models.Model):
             allowed_chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*",
         )
 
-    def enviar_credenciales_por_email(credenciales, empleado=None):
+    def enviar_credenciales_por_email(self, credenciales, empleado=None):
         """
         Envía credenciales de acceso al sistema por correo electrónico usando SendGrid
 
@@ -299,7 +299,7 @@ class Rol(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     responsabilidades = models.TextField(null=True, blank=True)
     departamento = models.ForeignKey(
-        "Departamento", on_delete=models.CASCADE, related_name="roles"
+        "Departamento", on_delete=models.SET_NULL, related_name="roles"
     )
     requiere_acceso_sistema = models.BooleanField(default=False)
 
@@ -316,16 +316,34 @@ class EmpleadoRol(models.Model):
     fecha_asignacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("empleado", "rol")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["empleado", "rol"], name="unique_empleado_rol"
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["empleado", "es_rol_principal"],
+                name="idx_empleado_rol_principal",
+            )
+        ]
 
     def clean(self):
-        # Validar que solo exista un rol principal por empleado
+        # Validar que solo haya un rol principal por empleado
         if self.es_rol_principal:
-            roles_principales = EmpleadoRol.objects.filter(
-                empleado=self.empleado, es_rol_principal=True
-            ).exclude(pk=self.pk)
-            if roles_principales.exists():
-                raise ValidationError("El empleado ya tiene un rol principal asignado.")
+            # Buscar si ya existe otro rol principal para este empleado
+            principal_exists = (
+                EmpleadoRol.objects.filter(
+                    empleado=self.empleado, es_rol_principal=True
+                )
+                .exclude(pk=self.pk)
+                .exists()
+            )
+            if principal_exists:
+                raise ValidationError(
+                    "El empleado ya tiene un rol principal asignado. Solo puede haber uno."
+                )
+        super().clean()
 
     def save(self, *args, **kwargs):
         self.full_clean()
