@@ -150,9 +150,6 @@ class EmpleadoAdmin(ModelAdmin):
         # Primero, guarda el empleado
         super().save_model(request, obj, form, change)
 
-        # Limpia los roles existentes del empleado
-        obj.empleadorol_set.all().delete()
-
         # Obtén los roles desde el inline
         rol_formset = inlineformset_factory(
             Empleado, EmpleadoRol, fields=("rol", "es_rol_principal"), extra=0
