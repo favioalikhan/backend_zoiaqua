@@ -1,5 +1,6 @@
 from django.contrib.admin import AdminSite, ModelAdmin, TabularInline
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group, Permission
 
 from .models import (
     KPI,
@@ -49,6 +50,10 @@ class CustomAdminSite(AdminSite):
 
         # Definir categorías personalizadas
         categories = {
+            "Autenticación y Seguridad": [  # Nueva categoría
+                "Group",
+                "Permission",
+            ],
             "Usuarios y Gestión de Personal": [
                 "CustomUser",
                 "Empleado",
@@ -90,35 +95,22 @@ class CustomAdminSite(AdminSite):
         }
 
         # Organizar los modelos en categorías
-        # Diccionario para organizar las aplicaciones por categoría
         categorized_apps = {category: [] for category in categories.keys()}
-        uncategorized_models = []
 
-        # Recorrer las aplicaciones y modelos
         # Recorrer las aplicaciones y modelos
         for app in app_list:
             for model in app["models"]:
-                is_categorized = False
                 for category, model_names in categories.items():
                     if model["object_name"] in model_names:
                         categorized_apps[category].append(model)
-                        is_categorized = True
                         break
 
-                if not is_categorized:
-                    uncategorized_models.append(model)
-
+        # Crear la lista final de categorías con sus modelos
         result = []
-
         for category_name, models in categorized_apps.items():
             if models:  # Solo incluir categorías con modelos
                 result.append({"name": category_name, "models": models})
 
-        # Agregar aplicaciones no categorizadas al final
-        if uncategorized_models:
-            result.append(
-                {"name": "Otras aplicaciones", "models": uncategorized_models}
-            )
         return result
 
 
@@ -254,6 +246,9 @@ class RolAdmin(ModelAdmin):
     search_fields = ["nombre", "departamento__nombre"]
     list_filter = ["departamento"]
 
+
+custom_admin_site.register(Group, GroupAdmin)
+custom_admin_site.register(Permission)
 
 # Usuarios y Gestión de Personal
 custom_admin_site.register(CustomUser, CustomUserAdmin)
