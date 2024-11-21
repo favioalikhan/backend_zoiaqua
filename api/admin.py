@@ -1,8 +1,6 @@
-from django.contrib import messages
 from django.contrib.admin import AdminSite, ModelAdmin, TabularInline
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group, Permission
-from django.db import transaction
 
 from .models import (
     KPI,
@@ -170,6 +168,22 @@ class EmpleadoRolInline(TabularInline):
     verbose_name = "Rol del Empleado"
     verbose_name_plural = "Roles del Empleado"
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "rol":
+            # Obtener el empleado desde la URL si existe
+            empleado_id = request.resolver_match.kwargs.get("object_id")
+            if empleado_id:
+                empleado = Empleado.objects.filter(pk=empleado_id).first()
+                if empleado and empleado.departamento_principal:
+                    # Filtrar roles según el departamento del empleado
+                    kwargs["queryset"] = Rol.objects.filter(
+                        departamento=empleado.departamento_principal
+                    )
+                else:
+                    # Si no hay departamento principal, no mostrar roles
+                    kwargs["queryset"] = Rol.objects.none()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 # Admin para el modelo Empleado
 class EmpleadoAdmin(ModelAdmin):
@@ -219,49 +233,16 @@ class EmpleadoAdmin(ModelAdmin):
         ),
     )
 
+    def get_inlines(self, request, obj=None):
+        # Solo mostrar el Inline al editar un empleado existente
+        if obj:
+            return [EmpleadoRolInline]
+        return []
+
     # Optimización del queryset para mejorar el rendimiento
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("departamento_principal", "user")
-
-    @transaction.atomic
-    def save_model(self, request, obj, form, change):
-        """Guarda el empleado primero"""
-        obj.save()
-        self._saved_empleado = obj
-
-    def save_formset(self, request, form, formset, change):
-        """Guarda los roles después de que el empleado existe"""
-        if not hasattr(self, "_saved_empleado"):
-            return
-
-        instances = formset.save(commit=False)
-
-        for instance in instances:
-            if instance.rol is not None:  # Solo guardamos si se seleccionó un rol
-                instance.empleado = self._saved_empleado
-                try:
-                    instance.save()
-                except Exception as e:
-                    messages.error(request, f"Error al guardar el rol: {str(e)}")
-                    continue
-
-        # Maneja eliminaciones si las hay
-        for obj in formset.deleted_objects:
-            obj.delete()
-
-        try:
-            formset.save_m2m()
-        except Exception as e:
-            # Si hay error en save_m2m, lo registramos pero no interrumpimos el proceso
-            messages.warning(request, f"Advertencia al guardar relaciones: {str(e)}")
-
-    def response_add(self, request, obj, post_url_continue=None):
-        """Personaliza la respuesta después de guardar"""
-        response = super().response_add(request, obj, post_url_continue)
-        if "_addanother" not in request.POST and "_continue" not in request.POST:
-            messages.success(request, "Empleado y roles guardados correctamente.")
-        return response
 
 
 # Admin para el modelo EmpleadoRol
