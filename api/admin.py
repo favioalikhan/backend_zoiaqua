@@ -90,20 +90,33 @@ class CustomAdminSite(AdminSite):
         }
 
         # Organizar los modelos en categorías
-        categorized_apps = []
-        for category_name, model_names in categories.items():
-            category_models = []
-            for app in app_list:
-                for model in app["models"]:
+        # Diccionario para organizar las aplicaciones por categoría
+        categorized_apps = {category: [] for category in categories.keys()}
+        uncategorized_apps = []
+
+        # Recorrer las aplicaciones y modelos
+        for app in app_list:
+            is_categorized = False
+            for model in app["models"]:
+                for category, model_names in categories.items():
                     if model["object_name"] in model_names:
-                        category_models.append(model)
+                        categorized_apps[category].append(model)
+                        is_categorized = True
+                        break  # Modelo encontrado, pasar al siguiente modelo
 
-            if category_models:
-                categorized_apps.append(
-                    {"name": category_name, "models": category_models}
-                )
+            if not is_categorized:
+                # Agregar la aplicación completa si no tiene modelos categorizados
+                uncategorized_apps.append(app)
 
-        return categorized_apps
+        result = []
+
+        for category_name, models in categorized_apps.items():
+            if models:  # Solo incluir categorías con modelos
+                result.append({"name": category_name, "models": models})
+
+        # Agregar aplicaciones no categorizadas al final
+        result.extend(uncategorized_apps)
+        return result
 
 
 custom_admin_site = CustomAdminSite(name="custom_admin")
