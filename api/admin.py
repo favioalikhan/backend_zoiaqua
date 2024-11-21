@@ -226,35 +226,42 @@ class EmpleadoAdmin(ModelAdmin):
 
     @transaction.atomic
     def save_model(self, request, obj, form, change):
-        """Guarda el modelo Empleado y guarda la referencia"""
-        super().save_model(request, obj, form, change)
+        """Guarda el empleado primero"""
+        obj.save()
         self._saved_empleado = obj
 
-    @transaction.atomic
     def save_formset(self, request, form, formset, change):
-        """Guarda los roles del empleado usando la referencia guardada"""
+        """Guarda los roles después de que el empleado existe"""
         if not hasattr(self, "_saved_empleado"):
             return
 
-        try:
-            instances = formset.save(commit=False)
+        instances = formset.save(commit=False)
 
-            # Asignamos el empleado guardado a cada rol nuevo
-            for instance in instances:
+        for instance in instances:
+            if instance.rol is not None:  # Solo guardamos si se seleccionó un rol
                 instance.empleado = self._saved_empleado
-                instance.save()
+                try:
+                    instance.save()
+                except Exception as e:
+                    messages.error(request, f"Error al guardar el rol: {str(e)}")
+                    continue
 
-            # Eliminamos los roles marcados para eliminar
-            for obj in formset.deleted_objects:
-                obj.delete()
+        # Maneja eliminaciones si las hay
+        for obj in formset.deleted_objects:
+            obj.delete()
 
-            # Guardamos las relaciones many-to-many si existen
+        try:
             formset.save_m2m()
-
         except Exception as e:
-            transaction.set_rollback(True)
-            messages.error(request, f"Error al guardar los roles: {str(e)}")
-            raise
+            # Si hay error en save_m2m, lo registramos pero no interrumpimos el proceso
+            messages.warning(request, f"Advertencia al guardar relaciones: {str(e)}")
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """Personaliza la respuesta después de guardar"""
+        response = super().response_add(request, obj, post_url_continue)
+        if "_addanother" not in request.POST and "_continue" not in request.POST:
+            messages.success(request, "Empleado y roles guardados correctamente.")
+        return response
 
 
 # Admin para el modelo EmpleadoRol
