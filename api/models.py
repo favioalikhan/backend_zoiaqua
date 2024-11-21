@@ -2,7 +2,7 @@ import os
 
 import sendgrid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-from django.core import ValidationError
+from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator, RegexValidator
 from django.db import models
 from django.template.loader import render_to_string
@@ -299,7 +299,11 @@ class Rol(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     responsabilidades = models.TextField(null=True, blank=True)
     departamento = models.ForeignKey(
-        "Departamento", on_delete=models.SET_NULL, related_name="roles"
+        "Departamento",
+        on_delete=models.SET_NULL,
+        related_name="roles",
+        null=True,
+        blank=True,
     )
     requiere_acceso_sistema = models.BooleanField(default=False)
 
