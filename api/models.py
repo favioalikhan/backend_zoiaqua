@@ -175,19 +175,6 @@ class Empleado(models.Model):
     class Meta:
         indexes = [models.Index(fields=["user"], name="idx_empleados_user")]
 
-    def validar_dni(self):
-        """
-        Método adicional para validaciones más complejas del DNI
-        """
-        # Ejemplo de validación (puedes agregar más lógica si es necesario)
-        if not self.dni or len(self.dni) != 8:
-            raise ValidationError("El DNI debe tener 8 dígitos")
-
-        if not self.dni.isdigit():
-            raise ValidationError("El DNI solo debe contener números")
-
-        return True
-
     def establecer_rol_principal(self, rol_id):
         """
         Establece un rol específico como principal y los demás como secundarios
@@ -303,12 +290,6 @@ class Empleado(models.Model):
             # Loguear el error
             print(f"Error al enviar credenciales por email: {str(e)}")
             return None
-
-    def save(self, *args, **kwargs):
-        if self.user:
-            self.email = self.user.email
-        self.validar_dni()
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
