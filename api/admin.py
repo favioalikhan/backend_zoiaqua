@@ -172,7 +172,7 @@ class EmpleadoRolInline(TabularInline):
 # Admin para el modelo Empleado
 class EmpleadoAdmin(ModelAdmin):
     model = Empleado
-
+    inlines = [EmpleadoRolInline]
     list_display = [
         "user",
         "nombre",
@@ -222,12 +222,32 @@ class EmpleadoAdmin(ModelAdmin):
         qs = super().get_queryset(request)
         return qs.select_related("departamento_principal", "user")
 
+    def save_model(self, request, obj, form, change):
+        """Guarda el modelo principal (Empleado)"""
+        super().save_model(request, obj, form, change)
+        # Guardamos el ID del empleado para usarlo en save_formset
+        self._saved_empleado = obj
+
+    def save_formset(self, request, form, formset, change):
+        """Guarda los formularios inline (EmpleadoRol) después de que el empleado existe"""
+        instances = formset.save(commit=False)
+
+        # Guardamos o actualizamos cada instancia del formset
+        for instance in instances:
+            if not instance.empleado_id:  # Si es nuevo rol
+                instance.empleado = self._saved_empleado
+            instance.save()
+
+        # Elimina los objetos marcados para eliminación
+        for obj in formset.deleted_objects:
+            obj.delete()
+
+        formset.save_m2m()
+
 
 # Admin para el modelo EmpleadoRol
 class EmpleadoRolAdmin(ModelAdmin):
     model = EmpleadoRol
-
-    inlines = [EmpleadoRolInline]
     list_display = ["empleado", "rol", "es_rol_principal", "fecha_asignacion"]
     list_filter = ["es_rol_principal", "rol"]
     search_fields = ["empleado__nombre", "empleado__dni", "rol__nombre"]
