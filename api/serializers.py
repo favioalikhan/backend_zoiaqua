@@ -34,8 +34,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         try:
             empleado = Empleado.objects.get(user=user)
             token["nombre"] = empleado.nombre
-            token["apellido"] = empleado.apellido
+            token["apellido_paterno"] = empleado.apellido_paterno
+            token["apellido_materno"] = empleado.apellido_materno
             token["puesto"] = empleado.puesto
+            token["acceso_sistema"] = empleado.acceso_sistema
             # Agrega otros campos según sea necesario
         except Empleado.DoesNotExist:
             pass  # Manejo si el usuario no tiene asociado un empleado
@@ -43,42 +45,37 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        # Validación inicial y autenticación del usuario
+        data = super().validate(attrs)
+        user = self.user
+
+        if not user.is_active:
+            raise serializers.ValidationError({"detail": "La cuenta está desactivada."})
         try:
-            # Validación inicial y autenticación del usuario
-            data = super().validate(attrs)
-            user = self.user
-
-            if not user.is_active:
-                raise serializers.ValidationError(
-                    {"detail": "La cuenta está desactivada."}
-                )
-            try:
-                empleado = Empleado.objects.get(user=user)
-            except Empleado.DoesNotExist:
-                raise serializers.ValidationError(
-                    {"detail": "No tiene permisos para acceder al sistema."}
-                )
-
-            if not empleado.tiene_acceso_sistema():
-                raise serializers.ValidationError(
-                    {"detail": "No tiene permisos para acceder al sistema."}
-                )
-            data.update(
-                {
-                    "username": user.username,
-                    "email": user.email,
-                    "nombre": empleado.nombre,
-                    "apellido_paterno": empleado.apellido_paterno,
-                    "apellido_materno": empleado.apellido_materno,
-                    "puesto": empleado.puesto,
-                    "acceso_sistema": empleado.acceso_sistema,
-                }
+            empleado = Empleado.objects.get(user=user)
+        except Empleado.DoesNotExist:
+            raise serializers.ValidationError(
+                {"detail": "No tiene permisos para acceder al sistema."}
             )
 
-            return data
-        except Exception as e:
-            # Asegurar que siempre devolvemos una respuesta JSON
-            raise serializers.ValidationError({"detail": str(e)})
+        if not empleado.tiene_acceso_sistema():
+            raise serializers.ValidationError(
+                {"detail": "No tiene permisos para acceder al sistema."}
+            )
+        data.update(
+            {
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "nombre": empleado.nombre,
+                "apellido_paterno": empleado.apellido_paterno,
+                "apellido_materno": empleado.apellido_materno,
+                "puesto": empleado.puesto,
+                "acceso_sistema": empleado.acceso_sistema,
+            }
+        )
+
+        return data
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -102,7 +99,16 @@ class EmpleadoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Empleado
-        fields = ["id", "user", "nombre", "apellido", "roles", "puesto"]
+        fields = [
+            "id",
+            "user",
+            "nombre",
+            "apellido_paterno",
+            "apellido_materno",
+            "roles",
+            "puesto",
+            "acceso_sistema",
+        ]
         read_only_fields = ["id"]
 
     def create(self, validated_data):
@@ -116,7 +122,12 @@ class EmpleadoSerializer(serializers.ModelSerializer):
         user = instance.user
 
         instance.nombre = validated_data.get("nombre", instance.nombre)
-        instance.apellido = validated_data.get("apellido", instance.apellido)
+        instance.apellido_paterno = validated_data.get(
+            "apellido_paterno", instance.apellido_paterno
+        )
+        instance.apellido_materno = validated_data.get(
+            "apellido_materno", instance.apellido_materno
+        )
         instance.puesto = validated_data.get("puesto", instance.puesto)
         instance.save()
 
@@ -136,7 +147,8 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "nombre",
-            "apellido",
+            "apellido_paterno",
+            "apellido_materno",
             "email",
             "telefono",
             "direccion",
