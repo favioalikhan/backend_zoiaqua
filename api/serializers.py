@@ -43,47 +43,42 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # Validación inicial y autenticación del usuario
-        data = super().validate(attrs)
-
-        # Obtener el usuario autenticado
-        user = self.user
-
-        # Verificar si el usuario está activo
-        if not user.is_active:
-            raise serializers.ValidationError("La cuenta está desactivada.")
-
-        # Intentar obtener el Empleado asociado
         try:
-            empleado = Empleado.objects.get(user=user)
-        except Empleado.DoesNotExist:
-            raise serializers.ValidationError(
-                "No tiene permisos para acceder al sistema."
+            # Validación inicial y autenticación del usuario
+            data = super().validate(attrs)
+            user = self.user
+
+            if not user.is_active:
+                raise serializers.ValidationError(
+                    {"detail": "La cuenta está desactivada."}
+                )
+            try:
+                empleado = Empleado.objects.get(user=user)
+            except Empleado.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"detail": "No tiene permisos para acceder al sistema."}
+                )
+
+            if not empleado.tiene_acceso_sistema():
+                raise serializers.ValidationError(
+                    {"detail": "No tiene permisos para acceder al sistema."}
+                )
+            data.update(
+                {
+                    "username": user.username,
+                    "email": user.email,
+                    "nombre": empleado.nombre,
+                    "apellido_paterno": empleado.apellido_paterno,
+                    "apellido_materno": empleado.apellido_materno,
+                    "puesto": empleado.puesto,
+                    "acceso_sistema": empleado.acceso_sistema,
+                }
             )
 
-        # Verificar si el empleado tiene acceso al sistema
-        if not empleado.tiene_acceso_sistema():
-            raise serializers.ValidationError(
-                "No tiene permisos para acceder al sistema."
-            )
-
-        # Agregar información adicional a la respuesta
-        data.update(
-            {
-                "username": user.username,
-                "email": user.email,
-                "nombre": empleado.nombre,
-                "apellido_paterno": empleado.apellido_paterno,
-                "apellido_materno": empleado.apellido_materno,
-                "puesto": empleado.puesto,
-            }
-        )
-
-        # Opcional: Agregar roles y permisos
-        roles = empleado.roles.values("nombre", "requiere_acceso_sistema")
-        data.update({"roles": list(roles)})
-
-        return data
+            return data
+        except Exception as e:
+            # Asegurar que siempre devolvemos una respuesta JSON
+            raise serializers.ValidationError({"detail": str(e)})
 
 
 class UserSerializer(serializers.ModelSerializer):
