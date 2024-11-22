@@ -15,7 +15,9 @@ class CustomUserManager(BaseUserManager):
     def create_user(self, email, username=None, password=None, **extra_fields):
         if not email:
             raise ValueError("El Email es obligatorio")
-        username, first_name, last_name = self.generate_unique_user_data(email)
+
+        if not username:
+            username, first_name, last_name = self.generate_unique_user_data(email)
 
         email = self.normalize_email(email)
         extra_fields.setdefault("first_name", first_name)
@@ -75,6 +77,12 @@ class CustomUser(AbstractUser):
     )
     eliminado = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        null=True,
+        blank=True,
+    )
 
     objects = CustomUserManager()
 
