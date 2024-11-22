@@ -12,7 +12,7 @@ from sendgrid.helpers.mail import Content, Email, Mail, To
 
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, username, password=None, **extra_fields):
+    def create_user(self, email, username=None, password=None, **extra_fields):
         if not email:
             raise ValueError("El Email es obligatorio")
         username, first_name, last_name = self.generate_unique_user_data(email)
