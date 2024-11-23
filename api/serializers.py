@@ -6,6 +6,7 @@ from .models import (
     KPI,
     ControlCalidad,
     CustomUser,
+    Departamento,
     DetallePedido,
     Distribucion,
     Empleado,
@@ -90,8 +91,15 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
 
+class DepartamentoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Departamento
+        fields = ("id", "nombre")
+
+
 class EmpleadoSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(read_only=True)
+    departamento_principal = DepartamentoSerializer(read_only=True)
     roles = serializers.SerializerMethodField()
     rol_principal = serializers.SerializerMethodField()
 
