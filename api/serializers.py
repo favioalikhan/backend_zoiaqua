@@ -220,7 +220,7 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
         # Crear la instancia inicial de Empleado con campos mínimos
         empleado = Empleado.objects.create(
             user=user,
-            **validated_data,  # Si es nullable
+            **validated_data,
         )
 
         return empleado

@@ -74,7 +74,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 # Vista para Empleado
 class EmpleadoViewSet(viewsets.ModelViewSet):
     queryset = Empleado.objects.all()
-    serializer_class = EmpleadoSerializer
 
     @action(
         detail=False,
