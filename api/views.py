@@ -75,7 +75,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class EmpleadoViewSet(viewsets.ModelViewSet):
     queryset = Empleado.objects.all()
     serializer_class = EmpleadoSerializer
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
 
     @action(
         detail=False,
