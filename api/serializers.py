@@ -107,6 +107,12 @@ class EmpleadoSerializer(serializers.ModelSerializer):
             },  # Evitamos que el usuario sea modificado directamente
         }
 
+    def get_email(self, obj):
+        """
+        Obtiene el email del usuario relacionado.
+        """
+        return obj.user.email if obj.user else ""
+
     def get_roles_info(self, obj):
         """
         Retorna información detallada de todos los roles del empleado
