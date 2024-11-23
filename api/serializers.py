@@ -83,21 +83,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["id", "username", "email"]
-        extra_kwargs = {"password": {"write_only": True}}
+        fields = ["id", "email"]
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
             raise ValidationError("Un usuario con este correo electrónico ya existe.")
         return value
 
-    def create(self, validated_data):
-        user = CustomUser.objects.create_user(**validated_data)
-        return user
-
 
 class EmpleadoSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(write_only=True)
+    email = serializers.SerializerMethodField(read_only=True)
     roles = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Rol.objects.all(), required=False
     )
