@@ -7,7 +7,6 @@ from .views import (
     CustomTokenObtainPairView,
     DetallePedidoViewSet,
     DistribucionViewSet,
-    EmpleadoRegistroView,
     EmpleadoViewSet,
     InventarioViewSet,
     KPIViewSet,
@@ -43,9 +42,4 @@ urlpatterns = [
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Rutas para navegación en la API (opcional)
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
-    path(
-        "api/empleados/registro/",
-        EmpleadoRegistroView.as_view(),
-        name="empleado_registro",
-    ),
 ]

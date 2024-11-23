@@ -9,12 +9,14 @@ from .models import (
     DetallePedido,
     Distribucion,
     Empleado,
+    EmpleadoRol,
     Inventario,
     MovimientoInventario,
     Pedido,
     Produccion,
     Producto,
     Reporte,
+    Rol,
     Ruta,
 )
 
@@ -95,92 +97,139 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class EmpleadoSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    email = serializers.EmailField(write_only=True)
+    roles = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Rol.objects.all(), required=False
+    )
+    rol_principal_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Empleado
-        fields = [
-            "id",
-            "user",
-            "nombre",
-            "apellido_paterno",
-            "apellido_materno",
-            "roles",
-            "puesto",
-            "acceso_sistema",
+        fields = "__all__"
+        extra_kwargs = {
+            "user": {
+                "read_only": True
+            },  # Evitamos que el usuario sea modificado directamente
+        }
+
+    def get_roles_info(self, obj):
+        """
+        Retorna información detallada de todos los roles del empleado
+        """
+        return [
+            {
+                "id": rol.rol.id,
+                "nombre": rol.rol.nombre,
+                "es_principal": rol.es_rol_principal,
+            }
+            for rol in obj.empleadorol_set.all()
         ]
-        read_only_fields = ["id"]
+
+    def get_rol_principal(self, obj):
+        """
+        Retorna información del rol principal
+        """
+        rol_principal = obj.empleadorol_set.filter(es_rol_principal=True).first()
+        if rol_principal:
+            return {"id": rol_principal.rol.id, "nombre": rol_principal.rol.nombre}
+        return None
 
     def create(self, validated_data):
-        user_data = validated_data.pop("user")
-        user = CustomUser.objects.create_user(**user_data)
-        empleado = Empleado.objects.create(user=user, **validated_data)
+        # Lógica para crear el usuario y asignarlo al empleado
+        email = validated_data.pop("email", None)
+        roles = validated_data.pop("roles", [])
+        rol_principal_id = validated_data.pop("rol_principal_id", None)
+
+        if not email:
+            raise serializers.ValidationError({"email": "Este campo es obligatorio."})
+
+        user = CustomUser.objects.create_user(email=email)
+
+        # Asignar el usuario al empleado
+        validated_data["user"] = user
+
+        # Crear la instancia de Empleado
+        empleado = Empleado.objects.create(**validated_data)
+
+        # Si se proporcionaron roles, asignarlos a través de EmpleadoRol
+        for rol in roles:
+            EmpleadoRol.objects.create(
+                empleado=empleado, rol=rol, es_rol_principal=False
+            )
+
+        # Establecer el rol principal si se proporcionó
+        if rol_principal_id:
+            empleado.establecer_rol_principal(rol_principal_id)
+
+        # Si el empleado requiere acceso al sistema, generar credenciales y enviar email
+        if empleado.acceso_sistema:
+            empleado.generar_credenciales()
+
         return empleado
 
     def update(self, instance, validated_data):
-        user_data = validated_data.pop("user")
-        user = instance.user
+        # Extraer roles y rol_principal_id de validated_data
+        roles = validated_data.pop("roles", None)
+        rol_principal_id = validated_data.pop("rol_principal_id", None)
 
-        instance.nombre = validated_data.get("nombre", instance.nombre)
-        instance.apellido_paterno = validated_data.get(
-            "apellido_paterno", instance.apellido_paterno
-        )
-        instance.apellido_materno = validated_data.get(
-            "apellido_materno", instance.apellido_materno
-        )
-        instance.puesto = validated_data.get("puesto", instance.puesto)
-        instance.save()
+        # Actualizar los campos del empleado
+        instance = super().update(instance, validated_data)
 
-        user.username = user_data.get("username", user.username)
-        user.email = user_data.get("email", user.email)
-        user.save()
+        if roles is not None:
+            # Actualizar los roles del empleado
+            # Eliminar roles existentes
+            instance.roles.clear()
+            # Asignar nuevos roles
+            for rol in roles:
+                EmpleadoRol.objects.create(
+                    empleado=instance, rol=rol, es_rol_principal=False
+                )
+
+        # Establecer el rol principal si se proporcionó
+        if rol_principal_id:
+            instance.establecer_rol_principal(rol_principal_id)
 
         return instance
 
+    def destroy(self, instance):
+        # Lógica para eliminar el empleado y su usuario asociado
+        user = instance.user
+        instance.delete()
+        if user:
+            user.delete()
+
 
 class EmpleadoRegistroSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-    confirmar_password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(write_only=True, required=True)
 
     class Meta:
         model = Empleado
-        fields = [
-            "id",
-            "nombre",
-            "apellido_paterno",
-            "apellido_materno",
-            "email",
-            "telefono",
-            "direccion",
-            "ciudad",
-            "codigo_postal",
-            "fecha_contratacion",
-            "puesto",
-            "estado",
-            "password",
-            "confirmar_password",
-        ]
-
-    def validate(self, data):
-        if data["password"] != data["confirmar_password"]:
-            raise serializers.ValidationError("Las contraseñas no coinciden.")
-        return data
+        fields = ["email"]
 
     def create(self, validated_data):
-        password = validated_data.pop("password")
-        validated_data.pop("confirmar_password")
+        email = validated_data.pop("email")
 
-        email = validated_data.get("email")
+        # Validar si el email ya existe
+        if CustomUser.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                {"email": "Este email ya está registrado."}
+            )
+        # Crear el usuario asociado
+        user = CustomUser.objects.create_user(email=email)
 
-        # Crear el CustomUser
-        user = CustomUser.objects.create_user(
-            email=email,
-            username=email,  # Puedes usar el email como username
-            password=password,
+        # Crear la instancia inicial de Empleado con campos mínimos
+        empleado = Empleado.objects.create(
+            user=user,
+            nombre="",  # Campo obligatorio, puedes ajustar según tus necesidades
+            apellido_paterno="",
+            apellido_materno="",
+            dni="",  # Asegúrate de que el campo permita cadenas vacías o ajusta el modelo
+            fecha_contratacion=None,  # Si es nullable
+            puesto="",
+            estado="activo",  # Valor por defecto
+            acceso_sistema=False,
+            departamento_principal=None,  # Si es nullable
         )
-
-        # Crear el Empleado asociado
-        empleado = Empleado.objects.create(user=user, **validated_data)
 
         return empleado
 

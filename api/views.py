@@ -1,5 +1,7 @@
+from argparse import Action
+
 from rest_framework import generics, permissions, status, viewsets
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -75,12 +77,26 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class EmpleadoViewSet(viewsets.ModelViewSet):
     queryset = Empleado.objects.all()
     serializer_class = EmpleadoSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
 
-    @action(detail=False, methods=["get"])
-    def me(self, request):
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+    @Action(
+        detail=False,
+        methods=["post"],
+        url_path="registro",
+        serializer_class=EmpleadoRegistroSerializer,
+    )
+    def registro(self, request):
+        """
+        Endpoint para registrar un nuevo empleado con solo el email.
+        Posteriormente, se puede actualizar con más información.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        empleado = serializer.save()
+        return Response(
+            EmpleadoSerializer(empleado, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class EmpleadoRegistroView(generics.CreateAPIView):
