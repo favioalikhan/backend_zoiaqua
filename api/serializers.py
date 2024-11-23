@@ -16,7 +16,6 @@ from .models import (
     Produccion,
     Producto,
     Reporte,
-    Rol,
     Ruta,
 )
 
@@ -93,10 +92,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 class EmpleadoSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(read_only=True)
-    roles = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Rol.objects.all(), required=False
-    )
+    roles = serializers.SerializerMethodField()
     rol_principal_id = serializers.IntegerField(write_only=True, required=False)
+    rol_principal = serializers.SerializerMethodField()
 
     class Meta:
         model = Empleado
@@ -113,9 +111,9 @@ class EmpleadoSerializer(serializers.ModelSerializer):
         """
         return obj.user.email if obj.user else ""
 
-    def get_roles_info(self, obj):
+    def get_roles(self, obj):
         """
-        Retorna información detallada de todos los roles del empleado
+        Retorna una lista de roles con detalles (id, nombre, es_principal).
         """
         return [
             {
