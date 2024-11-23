@@ -1,7 +1,5 @@
-from argparse import Action
-
 from rest_framework import generics, permissions, status, viewsets
-from rest_framework.decorators import api_view
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -79,7 +77,7 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
     serializer_class = EmpleadoSerializer
     permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
 
-    @Action(
+    @action(
         detail=False,
         methods=["post"],
         url_path="registro",
