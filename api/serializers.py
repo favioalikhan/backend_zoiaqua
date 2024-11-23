@@ -204,7 +204,20 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Empleado
-        fields = ["email"]
+        fields = [
+            "email",
+            "nombre",
+            "apellido_paterno",
+            "apellido_materno",
+            "dni",
+            "telefono",
+            "direccion",
+            "fecha_contratacion",
+            "puesto",
+            "estado",
+            "departamento_principal",
+            "acceso_sistema",
+        ]
 
     def create(self, validated_data):
         email = validated_data.pop("email")
@@ -220,7 +233,17 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
         # Crear la instancia inicial de Empleado con campos mínimos
         empleado = Empleado.objects.create(
             user=user,
-            **validated_data,
+            nombre=validated_data.get("nombre"),
+            apellido_paterno=validated_data.get("apellido_paterno"),
+            apellido_materno=validated_data.get("apellido_materno"),
+            dni=validated_data.get("dni"),
+            telefono=validated_data.get("telefono"),
+            direccion=validated_data.get("direccion"),
+            fecha_contratacion=validated_data.get("fecha_contratacion"),
+            puesto=validated_data.get("puesto"),
+            estado=validated_data.get("estado", "activo"),
+            departamento_principal=validated_data.get("departamento_principal"),
+            acceso_sistema=validated_data.get("acceso_sistema", False),
         )
 
         return empleado

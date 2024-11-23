@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status, viewsets
+from rest_framework import generics, permissions, serializers, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -75,24 +75,33 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class EmpleadoViewSet(viewsets.ModelViewSet):
     queryset = Empleado.objects.all()
 
+    def get_serializer_class(self):
+        if self.action == "registro":
+            return EmpleadoRegistroSerializer
+        return EmpleadoSerializer
+
     @action(
         detail=False,
         methods=["post"],
         url_path="registro",
-        serializer_class=EmpleadoRegistroSerializer,
     )
     def registro(self, request):
         """
-        Endpoint para registrar un nuevo empleado con solo el email.
-        Posteriormente, se puede actualizar con más información.
+        Endpoint para registrar un nuevo empleado con su información completa.
         """
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        empleado = serializer.save()
-        return Response(
-            EmpleadoSerializer(empleado, context={"request": request}).data,
-            status=status.HTTP_201_CREATED,
-        )
+
+        try:
+            serializer.is_valid(raise_exception=True)
+            empleado = serializer.save()
+            return Response(
+                EmpleadoSerializer(empleado, context={"request": request}).data,
+                status=status.HTTP_201_CREATED,
+            )
+        except serializers.ValidationError as e:
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmpleadoRegistroView(generics.CreateAPIView):
