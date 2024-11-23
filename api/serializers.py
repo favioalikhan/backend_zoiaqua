@@ -93,7 +93,6 @@ class UserSerializer(serializers.ModelSerializer):
 class EmpleadoSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(read_only=True)
     roles = serializers.SerializerMethodField()
-    rol_principal_id = serializers.IntegerField(write_only=True, required=False)
     rol_principal = serializers.SerializerMethodField()
 
     class Meta:
@@ -132,39 +131,6 @@ class EmpleadoSerializer(serializers.ModelSerializer):
         if rol_principal:
             return {"id": rol_principal.rol.id, "nombre": rol_principal.rol.nombre}
         return None
-
-    def create(self, validated_data):
-        # Lógica para crear el usuario y asignarlo al empleado
-        email = validated_data.pop("email", None)
-        roles = validated_data.pop("roles", [])
-        rol_principal_id = validated_data.pop("rol_principal_id", None)
-
-        if not email:
-            raise serializers.ValidationError({"email": "Este campo es obligatorio."})
-
-        user = CustomUser.objects.create_user(email=email)
-
-        # Asignar el usuario al empleado
-        validated_data["user"] = user
-
-        # Crear la instancia de Empleado
-        empleado = Empleado.objects.create(**validated_data)
-
-        # Si se proporcionaron roles, asignarlos a través de EmpleadoRol
-        for rol in roles:
-            EmpleadoRol.objects.create(
-                empleado=empleado, rol=rol, es_rol_principal=False
-            )
-
-        # Establecer el rol principal si se proporcionó
-        if rol_principal_id:
-            empleado.establecer_rol_principal(rol_principal_id)
-
-        # Si el empleado requiere acceso al sistema, generar credenciales y enviar email
-        if empleado.acceso_sistema:
-            empleado.generar_credenciales()
-
-        return empleado
 
     def update(self, instance, validated_data):
         # Extraer roles y rol_principal_id de validated_data
