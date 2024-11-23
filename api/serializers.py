@@ -220,15 +220,7 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
         # Crear la instancia inicial de Empleado con campos mínimos
         empleado = Empleado.objects.create(
             user=user,
-            nombre="",  # Campo obligatorio, puedes ajustar según tus necesidades
-            apellido_paterno="",
-            apellido_materno="",
-            dni="",  # Asegúrate de que el campo permita cadenas vacías o ajusta el modelo
-            fecha_contratacion=None,  # Si es nullable
-            puesto="",
-            estado="activo",  # Valor por defecto
-            acceso_sistema=False,
-            departamento_principal=None,  # Si es nullable
+            **validated_data,  # Si es nullable
         )
 
         return empleado
