@@ -189,6 +189,11 @@ class EmpleadoSerializer(serializers.ModelSerializer):
 
 class EmpleadoRegistroSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True, required=True)
+    rol_principal = serializers.CharField(
+        write_only=True,
+        required=True,
+        help_text="Nombre o ID del rol principal que se asignará al empleado.",
+    )
 
     class Meta:
         model = Empleado
@@ -205,11 +210,27 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
             "estado",
             "departamento_principal",
             "acceso_sistema",
+            "rol_principal",
         ]
+
+    def validate_rol_principal(self, value):
+        """
+        Valida que el rol principal exista en la base de datos.
+        Permite buscarlo por ID o nombre.
+        """
+        try:
+            if value.isdigit():
+                return Rol.objects.get(id=value)
+            else:
+                return Rol.objects.get(nombre=value)
+        except Rol.DoesNotExist:
+            raise serializers.ValidationError(
+                "El rol principal proporcionado no existe."
+            )
 
     def create(self, validated_data):
         email = validated_data.pop("email")
-
+        rol_principal = validated_data.pop("rol_principal")
         # Validar si el email ya existe
         if CustomUser.objects.filter(email=email).exists():
             raise serializers.ValidationError(
@@ -232,6 +253,11 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
             estado=validated_data.get("estado", "activo"),
             departamento_principal=validated_data.get("departamento_principal"),
             acceso_sistema=validated_data.get("acceso_sistema", False),
+        )
+
+        # Asignar el rol principal al empleado
+        EmpleadoRol.objects.create(
+            empleado=empleado, rol=rol_principal, es_rol_principal=True
         )
 
         return empleado
