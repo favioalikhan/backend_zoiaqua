@@ -104,6 +104,14 @@ class RolSerializer(serializers.ModelSerializer):
         fields = ("id", "nombre")
 
 
+class EmpleadoRolSerializer(serializers.ModelSerializer):
+    rol = RolSerializer(read_only=True)
+
+    class Meta:
+        model = EmpleadoRol
+        fields = ("rol", "es_rol_principal")
+
+
 class EmpleadoSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(read_only=True)
     departamento_principal = DepartamentoSerializer(read_only=True)
