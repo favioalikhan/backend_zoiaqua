@@ -17,6 +17,7 @@ from .models import (
     Produccion,
     Producto,
     Reporte,
+    Rol,
     Ruta,
 )
 
@@ -94,6 +95,12 @@ class UserSerializer(serializers.ModelSerializer):
 class DepartamentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Departamento
+        fields = ("id", "nombre")
+
+
+class RolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rol
         fields = ("id", "nombre")
 
 
