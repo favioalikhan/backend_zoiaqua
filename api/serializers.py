@@ -101,7 +101,7 @@ class DepartamentoSerializer(serializers.ModelSerializer):
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rol
-        fields = ("id", "nombre")
+        fields = ("id", "nombre", "departamento")
 
 
 class EmpleadoRolSerializer(serializers.ModelSerializer):

@@ -1,12 +1,14 @@
-from rest_framework import generics, permissions, serializers, status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import (
     KPI,
     ControlCalidad,
+    Departamento,
     DetallePedido,
     Distribucion,
     Empleado,
@@ -21,6 +23,7 @@ from .models import (
 from .serializers import (
     ControlCalidadSerializer,
     CustomTokenObtainPairSerializer,
+    DepartamentoSerializer,
     DetallePedidoSerializer,
     DistribucionSerializer,
     EmpleadoRegistroSerializer,
@@ -32,6 +35,7 @@ from .serializers import (
     ProduccionSerializer,
     ProductoSerializer,
     ReporteSerializer,
+    RolSerializer,
     RutaSerializer,
 )
 
@@ -104,10 +108,28 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmpleadoRegistroView(generics.CreateAPIView):
-    queryset = Empleado.objects.all()
-    serializer_class = EmpleadoRegistroSerializer
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+class DepartamentoViewSet(viewsets.ModelViewSet):
+    queryset = Departamento.objects.all()
+    serializer_class = DepartamentoSerializer
+
+
+class RolesByDepartamentoView(APIView):
+    def get(self, request, departamento_id):
+        try:
+            departamento = Departamento.objects.get(id=departamento_id)
+        except Departamento.DoesNotExist:
+            return Response(
+                {"error": "Departamento no encontrado"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Obtener todos los roles asociados al departamento
+        roles = departamento.roles.all()
+
+        # Serializar los roles
+        serializer = RolSerializer(roles, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Vista para Producto
