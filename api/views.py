@@ -18,6 +18,7 @@ from .models import (
     Produccion,
     Producto,
     Reporte,
+    Rol,
     Ruta,
 )
 from .serializers import (
@@ -124,7 +125,7 @@ class RolesByDepartamentoView(APIView):
             )
 
         # Obtener todos los roles asociados al departamento
-        roles = departamento.roles.all()
+        roles = Rol.objects.filter(departamento=departamento)
 
         # Serializar los roles
         serializer = RolSerializer(roles, many=True)

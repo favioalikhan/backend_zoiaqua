@@ -101,7 +101,13 @@ class DepartamentoSerializer(serializers.ModelSerializer):
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rol
-        fields = ("id", "nombre", "departamento")
+        fields = (
+            "id",
+            "nombre",
+            "responsabilidades",
+            "requiere_acceso_sistema",
+            "departamento",
+        )
 
 
 class EmpleadoRolSerializer(serializers.ModelSerializer):
