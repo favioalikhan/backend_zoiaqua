@@ -46,7 +46,7 @@ urlpatterns = [
     # Rutas para navegación en la API (opcional)
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path(
-        "departamentos/<int:departamento_id>/roles/",
+        "api/departamentos/<int:departamento_id>/roles/",
         RolesByDepartamentoView.as_view(),
         name="roles_por_departamento",
     ),
