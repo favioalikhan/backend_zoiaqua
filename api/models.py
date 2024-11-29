@@ -166,7 +166,15 @@ class Empleado(models.Model):
     )
     telefono = models.CharField(max_length=20, null=True, blank=True)
     direccion = models.TextField(null=True, blank=True)
-    fecha_contratacion = models.DateTimeField()
+    fecha_contratacion = models.DateField(
+        null=False, help_text="Fecha en que se firma el contrato"
+    )
+    fecha_ingreso = models.DateField(
+        null=True, blank=True, help_text="Fecha real de inicio de trabajo"
+    )
+    fecha_baja = models.DateField(
+        null=True, blank=True, help_text="Fecha de salida de la empresa"
+    )
     puesto = models.CharField(max_length=50, validators=[MinLengthValidator(1)])
     estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default="activo")
     departamento_principal = models.ForeignKey(

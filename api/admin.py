@@ -226,6 +226,8 @@ class EmpleadoAdmin(ModelAdmin):
                     "departamento_principal",
                     "estado",
                     "fecha_contratacion",
+                    "fecha_ingreso",
+                    "fecha_baja",
                     "acceso_sistema",
                 ),
                 "classes": ["tab"],
