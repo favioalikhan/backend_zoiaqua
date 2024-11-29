@@ -262,7 +262,7 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
             puesto=validated_data.get("puesto"),
             estado=validated_data.get("estado", "activo"),
             departamento_principal=validated_data.get("departamento_principal"),
-            acceso_sistema=validated_data.get("acceso_sistema", False),
+            acceso_sistema=validated_data.get("acceso_sistema"),
         )
 
         # Asignar el rol principal al empleado
