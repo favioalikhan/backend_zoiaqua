@@ -30,12 +30,6 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, username, password, **extra_fields):
-        # Genera un username, first_name y last_name si no se pasan
-        if not username:
-            username, first_name, last_name = self.generate_unique_user_data(email)
-
-        extra_fields.setdefault("first_name", first_name)
-        extra_fields.setdefault("last_name", last_name)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("tipo_usuario", "administrador")
@@ -83,7 +77,6 @@ class CustomUser(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
-        null=True,
         blank=True,
     )
 
@@ -91,7 +84,7 @@ class CustomUser(AbstractUser):
 
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ["username"]
 
     class Meta:
         verbose_name = "usuario"
