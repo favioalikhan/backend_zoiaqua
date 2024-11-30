@@ -276,7 +276,6 @@ class EmpleadoRegistroSerializer(serializers.ModelSerializer):
 
 
 class EmpleadoUpdateSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(write_only=True, required=False)
     rol_principal = serializers.PrimaryKeyRelatedField(
         queryset=Rol.objects.all(), write_only=True, required=False, allow_null=True
     )
@@ -284,6 +283,7 @@ class EmpleadoUpdateSerializer(serializers.ModelSerializer):
         child=serializers.PrimaryKeyRelatedField(queryset=Rol.objects.all()),
         write_only=True,
         required=False,
+        allow_null=True,
     )
 
     class Meta:
@@ -302,7 +302,6 @@ class EmpleadoUpdateSerializer(serializers.ModelSerializer):
             "estado",
             "departamento_principal",
             "acceso_sistema",
-            "email",
             "rol_principal",
             "roles_adicionales",
         ]
@@ -321,62 +320,43 @@ class EmpleadoUpdateSerializer(serializers.ModelSerializer):
                     {"dni": "Este DNI ya está registrado para otro empleado."}
                 )
 
-        # Validate email uniqueness
-        if "email" in attrs:
-            email = attrs["email"]
-            user_actual = self.instance.user
-            if (
-                CustomUser.objects.exclude(pk=user_actual.pk)
-                .filter(email=email)
-                .exists()
-            ):
-                raise serializers.ValidationError(
-                    {"email": "Este email ya está registrado por otro usuario."}
-                )
-
         return attrs
 
     def update(self, instance, validated_data):
         # Extract special fields
-        email = validated_data.pop("email", None)
         rol_principal = validated_data.pop("rol_principal", None)
-        roles_adicionales = validated_data.pop("roles_adicionales", [])
+        roles_adicionales = validated_data.pop("roles_adicionales", None)
 
         # Update Empleado fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # Update email for CustomUser
-        if email:
-            user = instance.user
-            user.email = email
-            user.save()
-
         # Manage principal role
-        if rol_principal:
+        if rol_principal is not None:
             # Deactivate current principal roles
             EmpleadoRol.objects.filter(empleado=instance, es_rol_principal=True).update(
                 es_rol_principal=False
             )
 
-            # Create or update principal role
-            empleado_rol_principal = EmpleadoRol.objects.get_or_create(
-                empleado=instance,
-                rol=rol_principal,
-                defaults={"es_rol_principal": True},
-            )
+            # Create or update principal role if a role is specified
+            if rol_principal:
+                empleado_rol_principal, _ = EmpleadoRol.objects.get_or_create(
+                    empleado=instance,
+                    rol=rol_principal,
+                    defaults={"es_rol_principal": True},
+                )
 
-            if not empleado_rol_principal.es_rol_principal:
-                empleado_rol_principal.es_rol_principal = True
-                empleado_rol_principal.save()
+                if not empleado_rol_principal.es_rol_principal:
+                    empleado_rol_principal.es_rol_principal = True
+                    empleado_rol_principal.save()
 
         # Manage additional roles
         if roles_adicionales is not None:
             # Remove existing non-principal roles
-            # EmpleadoRol.objects.filter(
-            #    empleado=instance, es_rol_principal=False
-            # ).delete()
+            EmpleadoRol.objects.filter(
+                empleado=instance, es_rol_principal=False
+            ).delete()
 
             # Add new additional roles
             for rol in roles_adicionales:
