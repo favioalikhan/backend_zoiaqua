@@ -21,20 +21,48 @@ from .views import (
     welcome_api_view,
 )
 
-router = routers.DefaultRouter()
-router.register(r"empleados", EmpleadoViewSet)
-router.register(r"departamentos", DepartamentoViewSet)
-router.register(r"productos", ProductoViewSet)
-router.register(r"inventarios", InventarioViewSet)
-router.register(r"movimientos-inventario", MovimientoInventarioViewSet)
-router.register(r"pedidos", PedidoViewSet)
-router.register(r"detalles-pedido", DetallePedidoViewSet)
-router.register(r"distribuciones", DistribucionViewSet)
-router.register(r"rutas", RutaViewSet)
-router.register(r"producciones", ProduccionViewSet)
-router.register(r"controles-calidad", ControlCalidadViewSet)
-router.register(r"kpis", KPIViewSet)
-router.register(r"reportes", ReporteViewSet)
+router = (
+    routers.DefaultRouter()
+)  # endpoint de la api https://web-production-0b68.up.railway.app/api (Ruta principal)
+router.register(
+    r"empleados", EmpleadoViewSet
+)  # https://web-production-0b68.up.railway.app/api/empleados (Get-List)
+router.register(
+    r"departamentos", DepartamentoViewSet
+)  # https://web-production-0b68.up.railway.app/api/departamentos (Get-List)
+router.register(
+    r"productos", ProductoViewSet
+)  # https://web-production-0b68.up.railway.app/api/productos (Get-List)
+router.register(
+    r"inventarios", InventarioViewSet
+)  # https://web-production-0b68.up.railway.app/api/inventarios (Get-List)
+router.register(
+    r"movimientos-inventario", MovimientoInventarioViewSet
+)  # https://web-production-0b68.up.railway.app/api/movimientos-inventario (Get-List)
+router.register(
+    r"pedidos", PedidoViewSet
+)  # https://web-production-0b68.up.railway.app/api/pedidos (Get-List)
+router.register(
+    r"detalles-pedido", DetallePedidoViewSet
+)  # https://web-production-0b68.up.railway.app/api/detalles-pedido (Get-List)
+router.register(
+    r"distribuciones", DistribucionViewSet
+)  # https://web-production-0b68.up.railway.app/api/distribuciones (Get-List)
+router.register(
+    r"rutas", RutaViewSet
+)  # https://web-production-0b68.up.railway.app/api/rutas (Get-List)
+router.register(
+    r"producciones", ProduccionViewSet
+)  # https://web-production-0b68.up.railway.app/api/producciones (Get-List)
+router.register(
+    r"controles-calidad", ControlCalidadViewSet
+)  # https://web-production-0b68.up.railway.app/api/controles-calidad (Get-List)
+router.register(
+    r"kpis", KPIViewSet
+)  # https://web-production-0b68.up.railway.app/api/kpis (Get-List)
+router.register(
+    r"reportes", ReporteViewSet
+)  # https://web-production-0b68.up.railway.app/api/reportes (Get-List)
 
 urlpatterns = [
     # Rutas de la API
