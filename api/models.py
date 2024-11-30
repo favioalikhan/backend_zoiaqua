@@ -33,9 +33,12 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("tipo_usuario", "administrador")
+
         if extra_fields.get("tipo_usuario") != "administrador":
             raise ValueError("El superusuario debe ser de tipo administrador.")
-        return self.create_superuser(email, username, password, **extra_fields)
+
+        # Llama a `create_user` en lugar de `create_superuser`
+        return self.create_user(email, username, password, **extra_fields)
 
     def generate_unique_user_data(self, email):
         """
