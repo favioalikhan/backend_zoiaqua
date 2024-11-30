@@ -29,6 +29,7 @@ from .serializers import (
     DistribucionSerializer,
     EmpleadoRegistroSerializer,
     EmpleadoSerializer,
+    EmpleadoUpdateSerializer,
     InventarioSerializer,
     KPISerializer,
     MovimientoInventarioSerializer,
@@ -83,6 +84,8 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "registro":
             return EmpleadoRegistroSerializer
+        elif self.action in ["update", "partial_update"]:
+            return EmpleadoUpdateSerializer
         return EmpleadoSerializer
 
     @action(
