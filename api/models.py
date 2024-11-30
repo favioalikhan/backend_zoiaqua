@@ -18,6 +18,10 @@ class CustomUserManager(BaseUserManager):
 
         if not username:
             username, first_name, last_name = self.generate_unique_user_data(email)
+        else:
+            # Si se proporciona username, usamos valores por defecto para evitar el error
+            first_name = extra_fields.get("first_name", "DefaultFirstName")
+            last_name = extra_fields.get("last_name", "DefaultLastName")
 
         email = self.normalize_email(email)
         extra_fields.setdefault("first_name", first_name)
