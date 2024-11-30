@@ -190,6 +190,7 @@ class EmpleadoAdmin(ModelAdmin):
     model = Empleado
     inlines = [EmpleadoRolInline]
     list_display = [
+        "id",
         "user",
         "nombre",
         "apellido_paterno",
