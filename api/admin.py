@@ -126,8 +126,9 @@ class CustomUserAdmin(UserAdmin):
         "is_staff",
         "tipo_usuario",
         "is_active",
+        "eliminado",
     )
-    list_filter = ("tipo_usuario", "is_staff", "is_active")
+    list_filter = ("tipo_usuario", "is_staff", "is_active", "eliminado")
     search_fields = ("username", "email")
     ordering = ("username",)
     fieldsets = (  # Personaliza la edición del usuario
@@ -138,7 +139,15 @@ class CustomUserAdmin(UserAdmin):
         ),
         (
             "Permisos",
-            {"fields": ("is_staff", "is_active", "groups", "user_permissions")},
+            {
+                "fields": (
+                    "is_staff",
+                    "is_active",
+                    "groups",
+                    "user_permissions",
+                    "eliminado",
+                )
+            },
         ),
         ("Fechas Importantes", {"fields": ("last_login", "date_joined")}),
     )
