@@ -368,6 +368,54 @@ class EmpleadoUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class EmpleadoDeleteSerializer(serializers.ModelSerializer):
+    """
+    Serializer for deleting an Empleado (Employee) instance.
+    Handles the deletion of both the employee and their associated user account.
+    """
+
+    class Meta:
+        model = Empleado
+        fields = []  # No fields needed for deletion
+
+    def delete(self, instance):
+        """
+        Custom delete method to handle deletion of employee and associated user.
+
+        Args:
+            instance (Empleado): The employee instance to be deleted
+
+        Returns:
+            None
+        """
+        try:
+            # Get the associated user before deleting the employee
+            user = instance.user if hasattr(instance, "user") else None
+
+            # Delete all associated EmpleadoRol instances first
+            EmpleadoRol.objects.filter(empleado=instance).delete()
+
+            # Delete the employee instance
+            instance.delete()
+
+            # Delete the associated user if it exists
+            if user:
+                user.delete()
+
+        except Exception as e:
+            # Raise a validation error with a descriptive message
+            raise serializers.ValidationError(
+                {"delete_error": f"Error al eliminar el empleado: {str(e)}"}
+            )
+
+    def perform_destroy(self, instance):
+        """
+        Method to be used with view's destroy action.
+        Provides a consistent interface for deletion.
+        """
+        self.delete(instance)
+
+
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto

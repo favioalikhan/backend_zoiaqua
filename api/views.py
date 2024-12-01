@@ -27,6 +27,7 @@ from .serializers import (
     DepartamentoSerializer,
     DetallePedidoSerializer,
     DistribucionSerializer,
+    EmpleadoDeleteSerializer,
     EmpleadoRegistroSerializer,
     EmpleadoSerializer,
     EmpleadoUpdateSerializer,
@@ -86,6 +87,8 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
             return EmpleadoRegistroSerializer
         elif self.action in ["update", "partial_update"]:
             return EmpleadoUpdateSerializer
+        elif self.action == "destroy":
+            return EmpleadoDeleteSerializer
         return EmpleadoSerializer
 
     @action(
