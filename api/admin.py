@@ -202,7 +202,7 @@ class EmpleadoAdmin(ModelAdmin):
     ]
     list_filter = ["estado", "departamento_principal", "acceso_sistema"]
     search_fields = ["user__username", "nombre", "apellido_paterno", "dni"]
-
+    ordering = ("id",)
     fieldsets = (
         (
             "Información Personal",
