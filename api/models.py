@@ -115,7 +115,9 @@ class CustomUser(AbstractUser):
 
     def delete(self, *args, **kwargs):
         """Sobrescribe la eliminación para aplicar una baja lógica."""
-        self.is_active = False
+        self.is_active = False  # Desactiva el usuario
+        self.is_staff = False  # Desactiva la casilla "is_staff"
+        self.eliminado = True  # Marca al usuario como "eliminado" (baja lógica)
         self.save()
 
 
