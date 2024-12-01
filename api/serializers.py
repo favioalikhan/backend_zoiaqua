@@ -392,16 +392,15 @@ class EmpleadoDeleteSerializer(serializers.ModelSerializer):
             # Get the associated user before deleting the employee
             user = instance.user if hasattr(instance, "user") else None
 
-            # Delete the associated user if it exists
-            if user:
-                user.eliminado = True  # Use the custom field you've added
-                user.is_active = False  # Ensure the user is marked as inactive
-                user.save()
             # Delete all associated EmpleadoRol instances first
             EmpleadoRol.objects.filter(empleado=instance).delete()
 
             # Delete the employee instance
             instance.delete()
+
+            # Delete the associated user if it exists
+            if user:
+                user.delete()
 
         except Exception as e:
             # Raise a validation error with a descriptive message

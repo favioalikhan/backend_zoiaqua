@@ -126,9 +126,8 @@ class CustomUserAdmin(UserAdmin):
         "is_staff",
         "tipo_usuario",
         "is_active",
-        "eliminado",
     )
-    list_filter = ("tipo_usuario", "is_staff", "is_active", "eliminado")
+    list_filter = ("tipo_usuario", "is_staff", "is_active")
     search_fields = ("username", "email")
     ordering = ("username",)
     fieldsets = (  # Personaliza la edición del usuario
@@ -160,10 +159,6 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
-
-    def delete_model(self, request, obj):
-        # Aplica baja lógica en lugar de eliminar físicamente
-        obj.delete()  # Llama al método delete() que sobrescribiste en el modelo
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
