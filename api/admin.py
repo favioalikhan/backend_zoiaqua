@@ -161,6 +161,10 @@ class CustomUserAdmin(UserAdmin):
         ),
     )
 
+    def delete_model(self, request, obj):
+        # Aplica baja lógica en lugar de eliminar físicamente
+        obj.delete()  # Llama al método delete() que sobrescribiste en el modelo
+
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context["total_users"] = (
