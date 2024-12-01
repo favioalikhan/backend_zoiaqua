@@ -400,7 +400,9 @@ class EmpleadoDeleteSerializer(serializers.ModelSerializer):
 
             # Delete the associated user if it exists
             if user:
-                user.delete()
+                user.eliminado = True  # Use the custom field you've added
+                user.is_active = False  # Ensure the user is marked as inactive
+                user.save()
 
         except Exception as e:
             # Raise a validation error with a descriptive message
