@@ -379,33 +379,23 @@ class EmpleadoDeleteSerializer(serializers.ModelSerializer):
         fields = []  # No fields needed for deletion
 
     def delete(self, instance):
-        """
-        Custom delete method to handle deletion of employee and associated user.
-
-        Args:
-            instance (Empleado): The employee instance to be deleted
-
-        Returns:
-            None
-        """
         try:
             # Get the associated user before deleting the employee
             user = instance.user if hasattr(instance, "user") else None
 
-            # Delete all associated EmpleadoRol instances first
-            EmpleadoRol.objects.filter(empleado=instance).delete()
-
-            # Delete the employee instance
-            instance.delete()
-
-            # Delete the associated user if it exists
             if user:
-                user.delete()
+                # Delete the associated user first
+                user.delete()  # This will delete the user from the database
+
+            # Now delete the employee instance
+            instance.delete()  # This will delete the employee from the database
 
         except Exception as e:
             # Raise a validation error with a descriptive message
             raise serializers.ValidationError(
-                {"delete_error": f"Error al eliminar el empleado: {str(e)}"}
+                {
+                    "delete_error": f"Error al eliminar el empleado y su usuario asociado: {str(e)}"
+                }
             )
 
     def perform_destroy(self, instance):
