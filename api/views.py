@@ -1,3 +1,4 @@
+from django.db.models import F
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
@@ -8,6 +9,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import (
     KPI,
     ControlCalidad,
+    ControlProduccionAgua,
+    ControlSoploBotellas,
     Departamento,
     DetallePedido,
     Distribucion,
@@ -23,6 +26,8 @@ from .models import (
 )
 from .serializers import (
     ControlCalidadSerializer,
+    ControlProduccionAguaSerializer,
+    ControlSoploBotellasSerializer,
     CustomTokenObtainPairSerializer,
     DepartamentoSerializer,
     DetallePedidoSerializer,
@@ -143,14 +148,72 @@ class RolesByDepartamentoView(APIView):
 class ProductoViewSet(viewsets.ModelViewSet):
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
-    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=["get"], url_path="activos")
+    def listar_activos(self, request):
+        """
+        Endpoint personalizado para listar solo los productos activos.
+        """
+        productos_activos = Producto.objects.filter(estado=True)
+        serializer = self.get_serializer(productos_activos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["patch"], url_path="toggle-estado")
+    def toggle_estado(self, request, pk=None):
+        """
+        Endpoint para alternar el estado de un producto (activo/inactivo).
+        """
+        producto = self.get_object()
+        producto.estado = not producto.estado
+        producto.save()
+        return Response(
+            {
+                "mensaje": f"Estado cambiado a {'Activo' if producto.estado else 'Inactivo'}"
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 # Vista para Inventario
 class InventarioViewSet(viewsets.ModelViewSet):
     queryset = Inventario.objects.all()
     serializer_class = InventarioSerializer
-    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=["get"], url_path="bajo-stock")
+    def listar_bajo_stock(self, request):
+        """
+        Endpoint personalizado para listar inventarios por debajo del stock mínimo.
+        """
+        inventarios_bajo_stock = Inventario.objects.filter(
+            cantidad_actual__lt=F("stock_minimo")
+        )
+        serializer = self.get_serializer(inventarios_bajo_stock, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["patch"], url_path="actualizar-stock")
+    def actualizar_stock(self, request, pk=None):
+        """
+        Endpoint para actualizar la cantidad actual de un inventario.
+        """
+        inventario = self.get_object()
+        nueva_cantidad = request.data.get("cantidad_actual")
+        if nueva_cantidad is None:
+            return Response(
+                {"error": "Debe proporcionar el campo 'cantidad_actual'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            inventario.cantidad_actual = int(nueva_cantidad)
+            inventario.save()
+            return Response(
+                {"mensaje": f"Cantidad actualizada a {inventario.cantidad_actual}"},
+                status=status.HTTP_200_OK,
+            )
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'cantidad_actual' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 # Vista para MovimientoInventario
@@ -164,53 +227,98 @@ class MovimientoInventarioViewSet(viewsets.ModelViewSet):
 class PedidoViewSet(viewsets.ModelViewSet):
     queryset = Pedido.objects.all()
     serializer_class = PedidoSerializer
-    permission_classes = [IsAuthenticated]
 
 
 # Vista para DetallePedido
 class DetallePedidoViewSet(viewsets.ModelViewSet):
     queryset = DetallePedido.objects.all()
     serializer_class = DetallePedidoSerializer
-    permission_classes = [IsAuthenticated]
 
 
 # Vista para Distribucion
 class DistribucionViewSet(viewsets.ModelViewSet):
     queryset = Distribucion.objects.all()
     serializer_class = DistribucionSerializer
-    permission_classes = [IsAuthenticated]
 
 
 # Vista para Ruta
 class RutaViewSet(viewsets.ModelViewSet):
     queryset = Ruta.objects.all()
     serializer_class = RutaSerializer
-    permission_classes = [IsAuthenticated]
 
 
 # Vista para Produccion
 class ProduccionViewSet(viewsets.ModelViewSet):
     queryset = Produccion.objects.all()
     serializer_class = ProduccionSerializer
-    permission_classes = [IsAuthenticated]
 
 
 # Vista para ControlCalidad
 class ControlCalidadViewSet(viewsets.ModelViewSet):
     queryset = ControlCalidad.objects.all()
     serializer_class = ControlCalidadSerializer
-    permission_classes = [IsAuthenticated]
+
+
+class ControlSoploBotellasViewSet(viewsets.ModelViewSet):
+    queryset = ControlSoploBotellas.objects.all()
+    serializer_class = ControlSoploBotellasSerializer
+
+    @action(detail=False, methods=["get"], url_path="reporte-dano")
+    def reporte_dano(self, request):
+        """
+        Endpoint personalizado para obtener los registros con mayor porcentaje de producción dañada.
+        """
+        resultados = self.queryset.annotate(
+            porcentaje_dano=F("produccion_danada") * 100 / F("produccion_total")
+        ).filter(porcentaje_dano__gt=10)  # Ejemplo: producción dañada mayor al 10%
+
+        serializer = self.get_serializer(resultados, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="produccion-por-empleado")
+    def produccion_por_empleado(self, request):
+        """
+        Obtiene un resumen de la producción total por empleado.
+        """
+        data = self.queryset.values("empleado__nombre").annotate(
+            produccion_buena_total=F("produccion_buena"),
+            produccion_total=F("produccion_total"),
+        )
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ControlProduccionAguaViewSet(viewsets.ModelViewSet):
+    queryset = ControlProduccionAgua.objects.all().order_by("-fecha_produccion")
+    serializer_class = ControlProduccionAguaSerializer
+
+    @action(
+        detail=False, methods=["get"], url_path="por-empleado/(?P<empleado_id>[^/.]+)"
+    )
+    def por_empleado(self, request, empleado_id=None):
+        """
+        Filtra controles de producción realizados por un empleado específico.
+        """
+        controles = self.queryset.filter(empleado_id=empleado_id)
+        serializer = self.get_serializer(controles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="por-lote/(?P<numero_lote>[^/.]+)")
+    def por_lote(self, request, numero_lote=None):
+        """
+        Filtra controles de producción por número de lote.
+        """
+        controles = self.queryset.filter(numero_lote=numero_lote)
+        serializer = self.get_serializer(controles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Vista para KPI
 class KPIViewSet(viewsets.ModelViewSet):
     queryset = KPI.objects.all()
     serializer_class = KPISerializer
-    permission_classes = [IsAuthenticated]
 
 
 # Vista para Reporte
 class ReporteViewSet(viewsets.ModelViewSet):
     queryset = Reporte.objects.all()
     serializer_class = ReporteSerializer
-    permission_classes = [IsAuthenticated]

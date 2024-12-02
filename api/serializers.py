@@ -5,6 +5,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
     KPI,
     ControlCalidad,
+    ControlSoploBotellas,
+    ControlProduccionAgua,
     CustomUser,
     Departamento,
     DetallePedido,
@@ -469,6 +471,18 @@ class ProduccionSerializer(serializers.ModelSerializer):
 class ControlCalidadSerializer(serializers.ModelSerializer):
     class Meta:
         model = ControlCalidad
+        fields = "__all__"
+
+
+class ControlSoploBotellasSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ControlSoploBotellas
+        fields = "__all__"  # Incluye todos los campos del modelo
+
+
+class ControlProduccionAguaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ControlProduccionAgua
         fields = "__all__"
 
 
