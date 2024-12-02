@@ -404,6 +404,7 @@ class Inventario(models.Model):
     cantidad_actual = models.IntegerField()
     punto_reorden = models.IntegerField()
     stock_minimo = models.IntegerField()
+    stock_maximo = models.IntegerField()
     fecha_vencimiento = models.DateTimeField(null=True, blank=True)
     control_produccion = models.ForeignKey(
         "ControlProduccionAgua", on_delete=models.SET_NULL, null=True, blank=True

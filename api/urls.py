@@ -4,6 +4,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
     ControlCalidadViewSet,
+    ControlSoploBotellasViewSet,
+    ControlProduccionAguaViewSet,
     CustomTokenObtainPairView,
     DepartamentoViewSet,
     DetallePedidoViewSet,
@@ -35,6 +37,9 @@ router.register(r"producciones", ProduccionViewSet)
 router.register(r"controles-calidad", ControlCalidadViewSet)
 router.register(r"kpis", KPIViewSet)
 router.register(r"reportes", ReporteViewSet)
+router.register(r"inventarios", InventarioViewSet)
+router.register(r"control-soplo-botellas", ControlSoploBotellasViewSet)
+router.register(r"control-produccion-agua", ControlProduccionAguaViewSet)
 
 urlpatterns = [
     # Rutas de la API
