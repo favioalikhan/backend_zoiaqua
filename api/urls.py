@@ -37,7 +37,6 @@ router.register(r"producciones", ProduccionViewSet)
 router.register(r"controles-calidad", ControlCalidadViewSet)
 router.register(r"kpis", KPIViewSet)
 router.register(r"reportes", ReporteViewSet)
-router.register(r"inventarios", InventarioViewSet)
 router.register(r"control-soplo-botellas", ControlSoploBotellasViewSet)
 router.register(r"control-produccion-agua", ControlProduccionAguaViewSet)
 
