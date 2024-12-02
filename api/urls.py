@@ -4,6 +4,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
     ControlCalidadViewSet,
+    ControlSoploBotellasViewSet,
+    ControlProduccionAguaViewSet,
     CustomTokenObtainPairView,
     DepartamentoViewSet,
     DetallePedidoViewSet,
@@ -21,6 +23,25 @@ from .views import (
     welcome_api_view,
 )
 
+<<<<<<< HEAD
+router = routers.DefaultRouter()
+router.register(r"empleados", EmpleadoViewSet)
+router.register(r"departamentos", DepartamentoViewSet)
+router.register(r"productos", ProductoViewSet)
+router.register(r"inventarios", InventarioViewSet)
+router.register(r"movimientos-inventario", MovimientoInventarioViewSet)
+router.register(r"pedidos", PedidoViewSet)
+router.register(r"detalles-pedido", DetallePedidoViewSet)
+router.register(r"distribuciones", DistribucionViewSet)
+router.register(r"rutas", RutaViewSet)
+router.register(r"producciones", ProduccionViewSet)
+router.register(r"controles-calidad", ControlCalidadViewSet)
+router.register(r"kpis", KPIViewSet)
+router.register(r"reportes", ReporteViewSet)
+router.register(r"inventarios", InventarioViewSet)
+router.register(r"control-soplo-botellas", ControlSoploBotellasViewSet)
+router.register(r"control-produccion-agua", ControlProduccionAguaViewSet)
+=======
 router = (
     routers.DefaultRouter()
 )  # endpoint de la api https://web-production-0b68.up.railway.app/api (Ruta principal)
@@ -63,6 +84,7 @@ router.register(
 router.register(
     r"reportes", ReporteViewSet
 )  # https://web-production-0b68.up.railway.app/api/reportes (Get-List)
+>>>>>>> 006d448483aa651edd8bdfeb9399b763f0bc7c9e
 
 urlpatterns = [
     # Rutas de la API
