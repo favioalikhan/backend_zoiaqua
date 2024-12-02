@@ -32,8 +32,10 @@ from .serializers import (
     DepartamentoSerializer,
     DetallePedidoSerializer,
     DistribucionSerializer,
+    EmpleadoDeleteSerializer,
     EmpleadoRegistroSerializer,
     EmpleadoSerializer,
+    EmpleadoUpdateSerializer,
     InventarioSerializer,
     KPISerializer,
     MovimientoInventarioSerializer,
@@ -88,6 +90,10 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "registro":
             return EmpleadoRegistroSerializer
+        elif self.action in ["update", "partial_update"]:
+            return EmpleadoUpdateSerializer
+        elif self.action == "destroy":
+            return EmpleadoDeleteSerializer
         return EmpleadoSerializer
 
     @action(
@@ -154,6 +160,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
         productos_activos = Producto.objects.filter(estado=True)
         serializer = self.get_serializer(productos_activos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=["patch"], url_path="toggle-estado")
     def toggle_estado(self, request, pk=None):

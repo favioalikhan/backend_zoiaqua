@@ -138,7 +138,14 @@ class CustomUserAdmin(UserAdmin):
         ),
         (
             "Permisos",
-            {"fields": ("is_staff", "is_active", "groups", "user_permissions")},
+            {
+                "fields": (
+                    "is_staff",
+                    "is_active",
+                    "groups",
+                    "user_permissions",
+                )
+            },
         ),
         ("Fechas Importantes", {"fields": ("last_login", "date_joined")}),
     )
@@ -151,13 +158,6 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
-
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context["total_users"] = (
-            CustomUser.objects.count()
-        )  # Obtén el total de usuarios
-        return super().changelist_view(request, extra_context=extra_context)
 
 
 class EmpleadoRolInline(TabularInline):
@@ -190,6 +190,7 @@ class EmpleadoAdmin(ModelAdmin):
     model = Empleado
     inlines = [EmpleadoRolInline]
     list_display = [
+        "id",
         "user",
         "nombre",
         "apellido_paterno",
@@ -201,7 +202,7 @@ class EmpleadoAdmin(ModelAdmin):
     ]
     list_filter = ["estado", "departamento_principal", "acceso_sistema"]
     search_fields = ["user__username", "nombre", "apellido_paterno", "dni"]
-
+    ordering = ("id",)
     fieldsets = (
         (
             "Información Personal",

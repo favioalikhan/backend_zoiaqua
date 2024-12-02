@@ -79,7 +79,6 @@ class CustomUser(AbstractUser):
         ],
         default="empleado",  # Por defecto, el usuario será empleado
     )
-    eliminado = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
     username = models.CharField(
         max_length=150,
@@ -112,11 +111,6 @@ class CustomUser(AbstractUser):
         help_text="Permisos específicos del usuario.",
         verbose_name="permisos de usuario",
     )
-
-    def delete(self, *args, **kwargs):
-        """Sobrescribe la eliminación para aplicar una baja lógica."""
-        self.is_active = False
-        self.save()
 
 
 class Cliente(models.Model):
