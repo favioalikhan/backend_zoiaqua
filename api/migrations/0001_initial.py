@@ -195,6 +195,7 @@ class Migration(migrations.Migration):
                 ('cantidad_actual', models.IntegerField()),
                 ('punto_reorden', models.IntegerField()),
                 ('stock_minimo', models.IntegerField()),
+                ('stock_maximo', models.IntegerField()),
                 ('fecha_vencimiento', models.DateTimeField(blank=True, null=True)),
                 ('fecha_actualizacion', models.DateTimeField(auto_now=True)),
                 ('control_produccion', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='api.controlproduccionagua')),

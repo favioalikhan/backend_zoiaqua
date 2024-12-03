@@ -152,8 +152,6 @@ class ProductoViewSet(viewsets.ModelViewSet):
 
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
-    permission_classes = [IsAuthenticated]
-
 
 # Vista para Inventario
 class InventarioViewSet(viewsets.ModelViewSet):
