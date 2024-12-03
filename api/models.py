@@ -395,9 +395,9 @@ class Producto(models.Model):
 class Inventario(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     numero_lote = models.CharField(max_length=100, null=True, blank=True)
-    cantidad_actual = models.IntegerField()
-    punto_reorden = models.IntegerField()
-    stock_minimo = models.IntegerField()
+    cantidad_actual = models.IntegerField(null=True, blank=True)
+    punto_reorden = models.IntegerField(null=True, blank=True)
+    stock_minimo = models.IntegerField(null=True, blank=True)
     stock_maximo = models.IntegerField(null=True, blank=True)
     fecha_vencimiento = models.DateTimeField(null=True, blank=True)
     control_produccion = models.ForeignKey(
