@@ -394,7 +394,6 @@ class Producto(models.Model):
 
 class Inventario(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    numero_lote = models.CharField(max_length=100, null=True, blank=True)
     cantidad_actual = models.IntegerField(null=True, blank=True)
     punto_reorden = models.IntegerField(null=True, blank=True)
     stock_minimo = models.IntegerField(null=True, blank=True)
@@ -408,8 +407,11 @@ class Inventario(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["producto"], name="idx_inventario_producto"),
-            models.Index(fields=["numero_lote"], name="idx_inventario_lote"),
         ]
+
+    @property
+    def numero_lote(self):
+        return self.control_produccion.numero_lote if self.control_produccion else None
 
 
 class MovimientoInventario(models.Model):
