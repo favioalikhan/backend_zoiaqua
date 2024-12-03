@@ -409,6 +409,8 @@ class EmpleadoDeleteSerializer(serializers.ModelSerializer):
 
 
 class ProductoSerializer(serializers.ModelSerializer):
+    precio_unitario = serializers.FloatField()  # Aseguramos que sea enviado como float
+
     class Meta:
         model = Producto
         fields = "__all__"
