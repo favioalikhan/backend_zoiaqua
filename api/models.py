@@ -383,6 +383,9 @@ class Producto(models.Model):
     descripcion = models.TextField(null=True, blank=True)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     unidad_medida = models.CharField(max_length=50, validators=[MinLengthValidator(1)])
+    stock_minimo = models.IntegerField(null=True, blank=True)
+    stock_maximo = models.IntegerField(null=True, blank=True)
+    cantidad_actual = models.IntegerField(null=True, blank=True)
     estado = models.BooleanField(default=True)
 
     class Meta:
