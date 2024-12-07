@@ -120,6 +120,7 @@ class Cliente(models.Model):
     )
     dni = models.CharField(
         max_length=20,
+        null=True,
         unique=True,  # Asegura que no haya DNIs duplicados
         validators=[
             RegexValidator(
