@@ -118,19 +118,27 @@ class Cliente(models.Model):
     apellido_paterno = models.CharField(
         max_length=100, validators=[MinLengthValidator(1)]
     )
-    apellido_materno = models.CharField(
-        max_length=100, validators=[MinLengthValidator(1)]
+    dni = models.CharField(
+        max_length=20,
+        unique=True,  # Asegura que no haya DNIs duplicados
+        validators=[
+            RegexValidator(
+                regex=r"^\d{8}$",  # Validación para DNI peruano (8 dígitos)
+                message="El DNI debe contener 8 dígitos numéricos",
+                code="invalid_dni",
+            )
+        ],
+        verbose_name="Documento de Identidad",
     )
     telefono = models.CharField(max_length=20, null=True, blank=True)
-    direccion = models.TextField()
-    ciudad = models.CharField(max_length=100, null=True, blank=True)
+    direccion = models.TextField(max_length=100, null=True, blank=True)
     fecha_registro = models.DateTimeField(default=timezone.now)
 
     class Meta:
         indexes = [models.Index(fields=["nombre"], name="idx_clientes_nombre")]
 
     def __str__(self):
-        return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
+        return f"{self.nombre} {self.apellido_paterno}"
 
 
 class Empleado(models.Model):

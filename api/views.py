@@ -1,4 +1,7 @@
+from django.conf import settings
+from django.db import transaction
 from django.db.models import F
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
@@ -6,8 +9,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from api.service import crear_distribucion
+
 from .models import (
     KPI,
+    Cliente,
     ControlCalidad,
     ControlProduccionAgua,
     ControlSoploBotellas,
@@ -25,6 +31,7 @@ from .models import (
     Ruta,
 )
 from .serializers import (
+    ClienteSerializer,
     ControlCalidadSerializer,
     ControlProduccionAguaSerializer,
     ControlSoploBotellasSerializer,
@@ -144,14 +151,53 @@ class RolesByDepartamentoView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# Vista para cliente
+class ClienteViewSet(viewsets.ModelViewSet):
+    queryset = Cliente.objects.all()
+    serializer_class = ClienteSerializer
+
+
 # Vista para Producto
 class ProductoViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para manejar CRUD de productos
-    """
-
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
+
+    @action(detail=False, methods=["get"], url_path="disponibles")
+    def disponibles(self, request):
+        productos = Producto.objects.filter(estado=True, cantidad_actual__gt=0)
+        serializer = self.get_serializer(productos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="check-stock")
+    def check_stock(self, request):
+        producto_id = request.data.get("producto_id")
+        cantidad = request.data.get("cantidad")
+
+        if not producto_id or not cantidad:
+            return Response(
+                {"error": "producto_id y cantidad son requeridos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        producto = get_object_or_404(Producto, id=producto_id, estado=True)
+        inventario = Inventario.objects.filter(producto=producto).first()
+
+        if not inventario or inventario.cantidad_actual < cantidad:
+            return Response(
+                {"disponible": False, "mensaje": "Stock insuficiente."},
+                status=status.HTTP_200_OK,
+            )
+
+        total = producto.precio_unitario * float(cantidad)
+        return Response(
+            {
+                "disponible": True,
+                "precio_unitario": producto.precio_unitario,
+                "total": total,
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 # Vista para Inventario
 class InventarioViewSet(viewsets.ModelViewSet):
@@ -211,6 +257,151 @@ class PedidoViewSet(viewsets.ModelViewSet):
     queryset = Pedido.objects.all()
     serializer_class = PedidoSerializer
 
+    @action(detail=False, methods=["post"], url_path="create-temp")
+    def create_temp(self, request):
+        cliente_id = request.data.get("cliente_id")
+        items = request.data.get("items")  # Lista de {producto_id, cantidad}
+
+        if not cliente_id or not items:
+            return Response(
+                {"error": "cliente_id y items son requeridos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cliente = get_object_or_404(Cliente, id=cliente_id)
+        total_pedido = 0
+        detalles = []
+
+        for item in items:
+            producto = get_object_or_404(Producto, id=item["producto_id"], estado=True)
+            inventario = Inventario.objects.filter(producto=producto).first()
+
+            if not inventario or inventario.cantidad_actual < item["cantidad"]:
+                return Response(
+                    {
+                        "error": f"Stock insuficiente para el producto {producto.nombre}."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            subtotal = producto.precio_unitario * float(item["cantidad"])
+            total_pedido += subtotal
+            detalles.append(
+                {
+                    "producto": producto.id,
+                    "cantidad": item["cantidad"],
+                    "precio_unitario": producto.precio_unitario,
+                    "subtotal": subtotal,
+                }
+            )
+
+        pedido = Pedido.objects.create(
+            cliente=cliente,
+            estado_pedido="pendiente",
+            total_pedido=total_pedido,
+            direccion_envio=cliente.direccion,
+            comentarios=request.data.get("comentarios", ""),
+        )
+
+        for detalle in detalles:
+            DetallePedido.objects.create(
+                pedido=pedido,
+                producto_id=detalle["producto"],
+                cantidad=detalle["cantidad"],
+                precio_unitario=detalle["precio_unitario"],
+                subtotal=detalle["subtotal"],
+            )
+
+        serializer = self.get_serializer(pedido)
+        return Response(
+            {"pedido": serializer.data, "total_pedido": total_pedido},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["post"], url_path="confirm-payment")
+    def confirm_payment(self, request, pk=None):
+        # Verificar el token de autorización
+        token = request.headers.get("Authorization")
+        if token != f"Bearer {settings.CONFIRM_PAYMENT_TOKEN}":
+            return Response(
+                {"error": "Autenticación inválida."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        pedido = self.get_object()
+
+        if pedido.estado_pedido != "pendiente":
+            return Response(
+                {"error": "El pedido no está en estado pendiente."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with transaction.atomic():
+                pedido.estado_pedido = "confirmado"
+                pedido.save()
+
+                # Actualizar inventario
+                detalles = DetallePedido.objects.select_for_update().filter(
+                    pedido=pedido
+                )
+                for detalle in detalles:
+                    inventario = (
+                        Inventario.objects.select_for_update()
+                        .filter(producto=detalle.producto)
+                        .first()
+                    )
+                    if inventario and inventario.cantidad_actual >= detalle.cantidad:
+                        inventario.cantidad_actual -= detalle.cantidad
+                        inventario.save()
+                    else:
+                        raise ValueError(
+                            f"Stock insuficiente para {detalle.producto.nombre}"
+                        )
+
+                # Crear distribución
+                direccion_cliente = pedido.direccion_envio
+                cantidad_paquetes = sum([detalle.cantidad for detalle in detalles])
+
+                resultado = crear_distribucion(
+                    pedido.id, direccion_cliente, cantidad_paquetes
+                )
+
+                if not resultado["success"]:
+                    raise ValueError("No se pudo crear la distribución.")
+
+            return Response(
+                {"success": True, "mensaje": "Pago confirmado y pedido actualizado."},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def create_distribution_manual(
+        self, pedido_id, direccion_cliente, cantidad_paquetes
+    ):
+        # Importar el viewset DistribucionViewSet
+        distribucion_viewset = DistribucionViewSet.as_view(
+            {"post": "create_distribution"}
+        )
+        from rest_framework.test import APIRequestFactory
+
+        factory = APIRequestFactory()
+        request = factory.post(
+            "/api/distribuciones/create-distribution/",
+            {
+                "pedido_id": pedido_id,
+                "direccion_cliente": direccion_cliente,
+                "cantidad_paquetes": cantidad_paquetes,
+            },
+            format="json",
+        )
+
+        response = distribucion_viewset(request)
+        if response.status_code == 201:
+            return {"success": True, "data": response.data}
+        else:
+            return {"success": False, "error": response.data}
+
 
 # Vista para DetallePedido
 class DetallePedidoViewSet(viewsets.ModelViewSet):
@@ -222,6 +413,32 @@ class DetallePedidoViewSet(viewsets.ModelViewSet):
 class DistribucionViewSet(viewsets.ModelViewSet):
     queryset = Distribucion.objects.all()
     serializer_class = DistribucionSerializer
+
+    @action(detail=False, methods=["post"], url_path="create-distribution")
+    def create_distribution(self, request):
+        pedido_id = request.data.get("pedido_id")
+        direccion_cliente = request.data.get("direccion_cliente")
+        cantidad_paquetes = request.data.get("cantidad_paquetes")
+
+        if not pedido_id or not direccion_cliente or not cantidad_paquetes:
+            return Response(
+                {
+                    "error": "pedido_id, direccion_cliente y cantidad_paquetes son requeridos."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        resultado = crear_distribucion(pedido_id, direccion_cliente, cantidad_paquetes)
+
+        if resultado["success"]:
+            distribucion = resultado["data"]
+            serializer = self.get_serializer(distribucion)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                {"error": resultado["error"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 # Vista para Ruta
@@ -304,4 +521,5 @@ class KPIViewSet(viewsets.ModelViewSet):
 # Vista para Reporte
 class ReporteViewSet(viewsets.ModelViewSet):
     queryset = Reporte.objects.all()
+    serializer_class = ReporteSerializer
     serializer_class = ReporteSerializer

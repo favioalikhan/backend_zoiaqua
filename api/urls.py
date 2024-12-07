@@ -3,6 +3,7 @@ from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    ClienteViewSet,
     ControlCalidadViewSet,
     ControlProduccionAguaViewSet,
     ControlSoploBotellasViewSet,
@@ -29,6 +30,7 @@ router.register(r"departamentos", DepartamentoViewSet)
 router.register(r"productos", ProductoViewSet)
 router.register(r"inventarios", InventarioViewSet)
 router.register(r"movimientos-inventario", MovimientoInventarioViewSet)
+router.register(r"clientes", ClienteViewSet)
 router.register(r"pedidos", PedidoViewSet)
 router.register(r"detalles-pedido", DetallePedidoViewSet)
 router.register(r"distribuciones", DistribucionViewSet)

@@ -4,6 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (
     KPI,
+    Cliente,
     ControlCalidad,
     ControlProduccionAgua,
     ControlSoploBotellas,
@@ -408,6 +409,12 @@ class EmpleadoDeleteSerializer(serializers.ModelSerializer):
         self.delete(instance)
 
 
+class ClienteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cliente
+        fields = "__all__"
+
+
 class ProductoSerializer(serializers.ModelSerializer):
     precio_unitario = serializers.FloatField()  # Aseguramos que sea enviado como float
 
@@ -440,7 +447,6 @@ class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pedido
         fields = [
-            "id",
             "cliente",
             "fecha_pedido",
             "estado_pedido",
